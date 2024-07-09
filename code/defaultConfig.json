@@ -1,0 +1,16 @@
+{
+	"servos" : {
+		"gunYaw" : {
+			"dom" : 180, 
+			"minPulse" : 500, 
+			"maxPulse" : 2500,
+			"minAngle" : 0,
+			"maxAngle" : 180,
+			"restAngle" : 90,
+			"maxSpeed" : 250,
+			"acceleration" : 2000,
+			"adjustment" : 0,
+			"invert" : 0
+		}
+	}
+}
