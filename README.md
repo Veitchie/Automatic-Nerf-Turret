@@ -1,5 +1,7 @@
 # Automatic NERF Turret
 
+<img src="./images/assembled_photo.jpg" width="500" />
+
 #### What's the idea?
 To make an automated turret that can do these things:
 * Automatically target at least anyone, ideally everyone but me
