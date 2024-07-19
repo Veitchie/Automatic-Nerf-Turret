@@ -8,4 +8,4 @@ class VL53L0X(adafruit_vl53l0x.VL53L0X):
         i2c = busio.I2C(board.SCL, board.SDA)
         print("i2c",i2c)
 
-        super(adafruit_vl53l0x.VL53L0X,self).__init__(i2c)
+        super().__init__(i2c)

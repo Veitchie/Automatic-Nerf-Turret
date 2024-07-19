@@ -1,14 +1,8 @@
 import time
 
-import board
-import busio
+import LIDAR
 
-import adafruit_vl53l0x
-
-# Initialize I2C bus and sensor.
-i2c = busio.I2C(board.SCL, board.SDA)
-print("i2c",i2c)
-vl53 = adafruit_vl53l0x.VL53L0X(i2c)
+vl53 = LIDAR.VL53L0X()
 
 vl53.measurement_timing_budget = 200000 # 20ms = 20000
 
