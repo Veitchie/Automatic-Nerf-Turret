@@ -1,7 +1,5 @@
 from PersonSensor import PersonSensor
-from adafruit_vl53l0x import VL53L0X
-import board
-import busio
+from LIDAR import VL53L0X
 
 class SensorHandler:
     """
@@ -12,18 +10,19 @@ class SensorHandler:
         
         # Setup VL53L0X
         print("Setting up VL53L0X...")        
-        self.lidar = VL53L0X(busio.I2C(board.SCL, board.SDA))
+        self._lidar = VL53L0X()
         
         # Setup Person Sensor
-        self.personSensor = PersonSensor()
+        self._personSensor = PersonSensor()
         
         print("Setup complete.")
     
     def getDistance(self):
-        return self.lidar.range
+        # Return distance in mm
+        return self._lidar.range
     
     def getFaceFromCentre(self, confidence = 95, uniqueValues = True):
-        return self.personSensor.getLargestFace(confidence, uniqueValues)
+        return self._personSensor.getLargestFace(confidence, uniqueValues)
 
 
 def main():
