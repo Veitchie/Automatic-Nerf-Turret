@@ -3,7 +3,7 @@ from LIDAR import VL53L0X
 
 class SensorHandler:
     """
-    This class controls the LIDAR & Person Sensor and has various modules to process their data.
+    This class handles the sensors...
     """
     
     def __init__(self):
