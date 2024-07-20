@@ -24,6 +24,10 @@ class SensorHandler:
     def getFaceFromCentre(self, confidence = 95, uniqueValues = True):
         return self._personSensor.getLargestFace(confidence, uniqueValues)
 
+    def continuousDistance(self):
+        with self._lidar.continuous_mode():
+            while True:
+                print("Range: {0}mm".format(self._lidar.range))
 
 def main():
     sensorHandler = SensorHandler()
