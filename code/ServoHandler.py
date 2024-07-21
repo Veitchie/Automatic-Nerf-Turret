@@ -2,7 +2,6 @@ from CustomServo import Servo
 from adafruit_servokit import ServoKit
 import threading
 from timeit import default_timer as timer
-import time
 
 class ServoHandler:
     
