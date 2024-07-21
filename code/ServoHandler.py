@@ -2,6 +2,7 @@ from CustomServo import Servo
 from adafruit_servokit import ServoKit
 import threading
 from timeit import default_timer as timer
+import time
 
 class ServoHandler:
     
@@ -14,11 +15,13 @@ class ServoHandler:
         self.gunYPitch = Servo(self.kit.servo[1], 270, 400, 2500, 60, 120, 90, 250, 2000, 0)
 
         self._prime = Servo(self.kit.servo[2], 180, 500, 2500, 10, 170, 90, 250, 2000, 0)
+        self._trigger = Servo(self.kit.servo[3], 180, 500, 2500, 10, 170, 90, 250, 2000, 0)
         
         self.trackYaw = Servo(self.kit.servo[4], 180, 500, 2500, 10, 170, 90, 250, 2000, 0, True, name = "trackYaw")
         self.trackPitch = Servo(self.kit.servo[5], 180, 500, 2500, 10, 170, 90, 250, 2000, 20, name = "trackPitch")
         
         self._primed = False
+        self.__triggerPull = False
         self.__primeActiveAngle = 70
         self.__revTimer = timer()
         self.__spinupTime = 3
@@ -98,17 +101,36 @@ class ServoHandler:
         self._prime.setAngle(self.__primeActiveAngle)
         while self._primed:
             currentTime = timer()
-            if (currentTime - self.__revTimer > self.__primeTimeout):
+            elapsedTime = currentTime - self.__revTimer
+            if (elapsedTime > self.__primeTimeout):
                 self.unprime()
-            if currentTime > self.__spinupTime:
+            if elapsedTime > self.__spinupTime:
                 self.__maxSpin = True
+            if self.__triggerPull:
+                if (currentTime - self.__triggerPullTime) > 1:
+                    self._trigger.rest()
+                    self.__triggerPull = False
+                    print("Releasing trigger")
+                else:
+                    self._trigger.setAngle(30)
         
     def unprime(self):
         self._primed = False
+        self.__maxSpin = False
+        self.__triggerPullTime = False
         self._prime.rest()
+
+    def fire(self):
+        self.prime()
+        self.__triggerPullTime = timer()
+        if self.__maxSpin:
+            self.__triggerPull = True
 
 
 if __name__ == '__main__':
     servoHandler = ServoHandler()
     servoHandler.enable()
     servoHandler.prime()
+    for i in range(5):
+        servoHandler.fire()
+        time.sleep(3)
