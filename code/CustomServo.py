@@ -157,7 +157,7 @@ class Servo:
         
     def setAdjustment(self, angle):
         self.adjustment = angle
-        setAngle(self.targetAngle)
+        self.setAngle(self.targetAngle)
         
     def getCurrentAngle(self):
         if (self.invert):
