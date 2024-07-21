@@ -2,6 +2,7 @@ from CustomServo import Servo
 from adafruit_servokit import ServoKit
 import threading
 from timeit import default_timer as timer
+import time
 
 class ServoHandler:
     
@@ -10,12 +11,22 @@ class ServoHandler:
         
         self.debug = debug
         
-        #self.gunYaw = Servo(self.kit.servo[0], 270, 400, 2500, 0, 270, 135, 250, 2000, -10)
-        #self.gunYPitch = Servo(self.kit.servo[1], 270, 400, 2500, 60, 120, 90, 250, 2000, 0)
+        self.gunYaw = Servo(self.kit.servo[0], 270, 400, 2500, 0, 270, 135, 250, 2000, -10)
+        self.gunYPitch = Servo(self.kit.servo[1], 270, 400, 2500, 60, 120, 90, 250, 2000, 0)
+
+        self._prime = Servo(self.kit.servo[2], 180, 500, 2500, 10, 170, 90, 250, 2000, 0)
         
         self.trackYaw = Servo(self.kit.servo[4], 180, 500, 2500, 10, 170, 90, 250, 2000, 0, True, name = "trackYaw")
         self.trackPitch = Servo(self.kit.servo[5], 180, 500, 2500, 10, 170, 90, 250, 2000, 20, name = "trackPitch")
         
+        self._primed = False
+        self.__primeActiveAngle = 70
+        self.__revTimer = timer()
+        self.__spinupTime = 3
+        self.__maxSpin = False
+        self.__primeTimeout = 5
+        self.__revThread = threading.Thread(target=self.revBarrel, args=(), daemon=False)
+
         self.enabled = False
         self.exit = False
         
@@ -53,16 +64,15 @@ class ServoHandler:
         self.trackYaw.setAngle(self.trackYaw.getCurrentAngle() - self.trackYaw.adjustment + angles[0])
         self.trackPitch.setAngle(self.trackPitch.getCurrentAngle() - self.trackPitch.adjustment + angles[1])
         
-    #def aim(self, pitchOffset = 10):
-    #    self.trackYaw.currentAngle 
     
     def update(self):
         while (not self.exit):
             if (self.enabled):
-                #self.gunYaw.update()
-                #self.gunYPitch.update()
+                self.gunYaw.update()
+                self.gunYPitch.update()
                 self.trackYaw.update()
                 self.trackPitch.update()
+                self._prime.update()
             if (self.debug):
                 print("ServoHandler: track-target-angle -> [%s,%s]" % (self.trackYaw.targetAngle,self.trackPitch.targetAngle))
             
@@ -78,5 +88,28 @@ class ServoHandler:
     
     def inMotion(self):
         return not (self.trackYaw.atPos and self.trackPitch.atPos)
-        
+    
+    def prime(self):
+        self.__revTimer = timer()
+        if not self._primed:
+            self.__revThread.start()
+            self._primed = True
 
+    def revBarrel(self):
+        self._prime.setAngle(self.__primeActiveAngle)
+        while self._primed:
+            currentTime = timer()
+            if (currentTime - self.__revTimer > self.__primeTimeout):
+                self.unprime()
+            if currentTime > self.__spinupTime:
+                self.__maxSpin = True
+        
+    def unprime(self):
+        self._primed = False
+        self._prime.rest()
+
+
+if __name__ == '__main__':
+    servoHandler = ServoHandler()
+    servoHandler.enable()
+    servoHandler.prime()

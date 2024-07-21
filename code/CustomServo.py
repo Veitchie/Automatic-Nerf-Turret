@@ -86,6 +86,9 @@ class Servo:
         self.atPos = False
         return self.update()
     
+    def rest(self):
+        self.setAngle(self.restAngle)
+    
     
     def adjust(self, val):
         self.setAngle(self.targetAngle + val)
