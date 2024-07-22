@@ -11,14 +11,14 @@ class ServoHandler:
         
         self.debug = debug
         
-        self.gunYaw = Servo(self.kit.servo[0], 270, 400, 2500, 0, 270, 135, 250, 2000, -10)
-        self.gunYPitch = Servo(self.kit.servo[1], 270, 400, 2500, 60, 120, 90, 250, 2000, 0)
-
-        self._prime = Servo(self.kit.servo[2], 180, 500, 2500, 10, 170, 90, 250, 2000, 0)
-        self._trigger = Servo(self.kit.servo[3], 180, 500, 2500, 10, 170, 130, 550, 2000, 0)
+        self.gunYaw = Servo(self.kit.servo[0], dom=270, minPulse=400, maxPulse=2500, minAngle=0, maxAngle=270, restAngle=135, maxSpeed=250, acceleration=2000, adjustment=-10)
+        self.gunYPitch = Servo(self.kit.servo[1], dom=270, minPulse=400, maxPulse=2500, minAngle=60, maxAngle=120, restAngle=90, maxSpeed=250, acceleration=2000)
         
-        self.trackYaw = Servo(self.kit.servo[4], 180, 500, 2500, 10, 170, 90, 250, 2000, 0, True, name = "trackYaw")
-        self.trackPitch = Servo(self.kit.servo[5], 180, 500, 2500, 10, 170, 90, 250, 2000, 20, name = "trackPitch")
+        self._prime = Servo(self.kit.servo[2], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=250, acceleration=2000)
+        self._trigger = Servo(self.kit.servo[3], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=130, maxSpeed=250, acceleration=2000)
+
+        self.trackYaw = Servo(self.kit.servo[4], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=250, acceleration=2000, invert=True, name = "trackYaw")
+        self.trackPitch = Servo(self.kit.servo[5], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=250, acceleration=2000, adjustment=20, name = "trackPitch")
         
         timerStartValue = timer()
 
@@ -137,11 +137,6 @@ if __name__ == '__main__':
     x = ""
     a = 10
     while not x == "c":
-        if servoHandler.moveTurret((a,60)):
-            a = 260
-        else:
-            a = 10
-            servoHandler.moveTurret((a,60))
 
         x = input()
         if x == "p":
