@@ -59,8 +59,9 @@ class ServoHandler:
         self.exit = True
     
     def moveTurret(self, angles):
-        self.gunYaw.setAngle(angles[0])
-        self.gunYPitch.setAngle(angles[1])
+        a = self.gunYaw.setAngle(angles[0])
+        b = self.gunYPitch.setAngle(angles[1])
+        return a or b
         
     def adjustCamera(self, angles):
         self.trackYaw.adjust(angles[0])
@@ -134,7 +135,14 @@ if __name__ == '__main__':
     servoHandler.enable()
 
     x = ""
+    a = 10
     while not x == "c":
+        if servoHandler.moveTurret((a,60)):
+            a = 260
+        else:
+            a = 10
+            servoHandler.moveTurret((a,60))
+
         x = input()
         if x == "p":
             servoHandler.unprime()
