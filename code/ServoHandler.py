@@ -31,7 +31,6 @@ class ServoHandler:
         self.__triggerReleaseTime = timerStartValue
         self.__spinupTime = 2
         self.__maxSpin = False
-        self.__primeTimeout = 5
 
         self.enabled = False
         self.exit = False
