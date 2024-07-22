@@ -15,19 +15,18 @@ class ServoHandler:
         self.gunYPitch = Servo(self.kit.servo[1], 270, 400, 2500, 60, 120, 90, 250, 2000, 0)
 
         self._prime = Servo(self.kit.servo[2], 180, 500, 2500, 10, 170, 90, 250, 2000, 0)
-        self._trigger = Servo(self.kit.servo[3], 180, 500, 2500, 10, 170, 90, 250, 2000, 0)
+        self._trigger = Servo(self.kit.servo[3], 180, 500, 2500, 10, 170, 90, 550, 2000, 0)
         
         self.trackYaw = Servo(self.kit.servo[4], 180, 500, 2500, 10, 170, 90, 250, 2000, 0, True, name = "trackYaw")
         self.trackPitch = Servo(self.kit.servo[5], 180, 500, 2500, 10, 170, 90, 250, 2000, 20, name = "trackPitch")
         
         self._primed = False
         self.__triggerPull = False
-        self.__primeActiveAngle = 70
+        self.__primeActiveAngle = 50
         self.__revTimer = timer()
-        self.__spinupTime = 3
+        self.__spinupTime = 2
         self.__maxSpin = False
         self.__primeTimeout = 5
-        self.__revThread = threading.Thread(target=self.revBarrel, args=(), daemon=False)
 
         self.enabled = False
         self.exit = False
@@ -69,23 +68,32 @@ class ServoHandler:
     
     def update(self):
         while (not self.exit):
+            currentTime = timer()
+
             if (self.enabled):
+
+                if self._primed:
+                    elapsedTime = currentTime - self.__revTimer
+                    if elapsedTime > self.__spinupTime:
+                        self.__maxSpin = True
+                    if self.__triggerPull:
+                        timeSinceTriggerPull = currentTime - self.__triggerPullTime
+                        if timeSinceTriggerPull > 0.5:
+                            self._trigger.rest()
+                            self.__triggerPull = False
+                        else:
+                            self._trigger.setAngle(30)
+
+
                 self.gunYaw.update()
                 self.gunYPitch.update()
                 self.trackYaw.update()
                 self.trackPitch.update()
                 self._prime.update()
+                self._trigger.update()
+
             if (self.debug):
                 print("ServoHandler: track-target-angle -> [%s,%s]" % (self.trackYaw.targetAngle,self.trackPitch.targetAngle))
-            
-            
-            currentUptime = timer()
-            timeElapsed = currentUptime - self.timeAtLastUpdate
-            
-            while (timeElapsed < self.updateTime):
-                currentUptime = timer()
-                timeElapsed = currentUptime - self.timeAtLastUpdate
-            self.timeAtLastUpdate = timer()
             
     
     def inMotion(self):
@@ -93,36 +101,19 @@ class ServoHandler:
     
     def prime(self):
         self.__revTimer = timer()
-        if not self._primed:
-            self.__revThread.start()
-            self._primed = True
-
-    def revBarrel(self):
         self._prime.setAngle(self.__primeActiveAngle)
-        while self._primed:
-            currentTime = timer()
-            elapsedTime = currentTime - self.__revTimer
-            if (elapsedTime > self.__primeTimeout):
-                self.unprime()
-            if elapsedTime > self.__spinupTime:
-                self.__maxSpin = True
-            if self.__triggerPull:
-                if (currentTime - self.__triggerPullTime) > 1:
-                    self._trigger.rest()
-                    self.__triggerPull = False
-                    print("Releasing trigger")
-                else:
-                    self._trigger.setAngle(30)
+        self._primed = True
         
     def unprime(self):
         self._primed = False
         self.__maxSpin = False
-        self.__triggerPullTime = False
+        self.__triggerPull = False
         self._prime.rest()
 
     def fire(self):
-        self.prime()
-        self.__triggerPullTime = timer()
+        #self.prime()
+        if not self.__triggerPull:
+            self.__triggerPullTime = timer()
         if self.__maxSpin:
             self.__triggerPull = True
 
@@ -131,6 +122,9 @@ if __name__ == '__main__':
     servoHandler = ServoHandler()
     servoHandler.enable()
     servoHandler.prime()
-    for i in range(5):
+
+    x = ""
+    while not x == "c":
+        x = input()
         servoHandler.fire()
-        time.sleep(3)
+    servoHandler.unprime()
