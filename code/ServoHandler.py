@@ -20,12 +20,15 @@ class ServoHandler:
         self.trackYaw = Servo(self.kit.servo[4], 180, 500, 2500, 10, 170, 90, 250, 2000, 0, True, name = "trackYaw")
         self.trackPitch = Servo(self.kit.servo[5], 180, 500, 2500, 10, 170, 90, 250, 2000, 20, name = "trackPitch")
         
+        timerStartValue = timer()
+
         self._primed = False
         self.__triggerPull = False
         self.__triggerDepressionDelay = 0.5
         self.__triggerPullAngle = 55
         self.__primeActiveAngle = 50
-        self.__revTimer = timer()
+        self.__revTimer = timerStartValue
+        self.__triggerReleaseTime = timerStartValue
         self.__spinupTime = 2
         self.__maxSpin = False
         self.__primeTimeout = 5
@@ -37,7 +40,7 @@ class ServoHandler:
         self.rightOffset = 0
         self.heightOffset = 20
         
-        self.timeAtLastUpdate = timer()
+        self.timeAtLastUpdate = timerStartValue
         self.updateTime = 0.01
         self.updateThread = threading.Thread(target=self.update, args=(), daemon=True)
         self.start()
@@ -87,6 +90,7 @@ class ServoHandler:
                         if timeSinceTriggerPull > self.__triggerDepressionDelay:
                             self._trigger.rest()
                             self.__triggerPull = False
+                            self.__triggerReleaseTime = timer()
                         else:
                             self._trigger.setAngle(self.__triggerPullAngle)
 
@@ -106,7 +110,7 @@ class ServoHandler:
         return not (self.trackYaw.atPos and self.trackPitch.atPos)
     
     def prime(self, noTimerUpdate = False):
-        if not noTimerUpdate:
+        if not noTimerUpdate and self._primed:
             self.__revTimer = timer()
         self._prime.setAngle(self.__primeActiveAngle)
         self._primed = True
@@ -121,7 +125,7 @@ class ServoHandler:
         self.prime(noTimerUpdate = True)
         if not self.__triggerPull:
             self.__triggerPullTime = timer()
-        if self.__maxSpin:
+        if self.__maxSpin and (timer() - self.__triggerReleaseTime) > self.__triggerDepressionDelay:
             self.__triggerPull = True
 
 
