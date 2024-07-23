@@ -50,8 +50,6 @@ class PersonSensor:
         self.sensorCutoff = [[60,255],[60,255]]
         self.adjustedCentre = [self.sensorCutoff[0][0] + ((self.sensorCutoff[0][1] - self.sensorCutoff[0][0]) / 2), self.sensorCutoff[1][0] + ((self.sensorCutoff[1][1] - self.sensorCutoff[1][0]) / 2)]
         
-        self.start()
-        
     
     def start(self):
         self.continousEnabled = True
@@ -62,7 +60,9 @@ class PersonSensor:
     
     def continousUpdate(self):
         while self.continousEnabled:
-            self.faces = self.update()
+            faces = self.update()
+            if faces != -1:
+                self.faces = faces
             #time.sleep(self.PERSON_SENSOR_DELAY)
             
     def update(self):
@@ -202,12 +202,16 @@ class PersonSensor:
 
 def main():
     ps = PersonSensor()
-    
-    while True:
+
+    x = ""
+    a = 10
+    while not x == "c":
         face, unique = ps.getLargestFace(confidence = 95, uniqueValues = True)
         if (face != -1):
             if (unique):
                 print(face)
+        x = input()
+
 
 
 if __name__ == '__main__':
