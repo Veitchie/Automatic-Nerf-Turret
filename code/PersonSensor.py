@@ -40,7 +40,7 @@ class PersonSensor:
         
         
         # Custom variables
-        self.continousEnabled = False
+        self.continuousEnabled = False
         self.fov = 110
         resolution = [1280,720]
         self.fovScale = [self.fov / 255, (self.fov * (resolution[1] / resolution[0])) / 255]
@@ -52,14 +52,14 @@ class PersonSensor:
         
     
     def start(self):
-        self.continousEnabled = True
-        Thread(target=self._continousUpdate, args=(), daemon=True).start()
+        self.continuousEnabled = True
+        Thread(target=self._continuousUpdate, args=(), daemon=True).start()
     
     def stop(self):
-        self.continousEnabled = False
+        self.continuousEnabled = False
     
-    def _continousUpdate(self):
-        while self.continousEnabled:
+    def _continuousUpdate(self):
+        while self.continuousEnabled:
             faces = self.update()
             if faces != -1:
                 self.faces = faces
@@ -138,7 +138,7 @@ class PersonSensor:
             WHen no faces are detected:
                 -1
         '''
-        if self.continousEnabled:
+        if self.continuousEnabled:
             faces = self.faces
             self.faces = -1
             return faces
@@ -230,13 +230,21 @@ class PersonSensor:
             return face
         return -1
     
-    def getAngleEstimation(self, coords = -1, face = -1):
+    def getAngleEstimation(self, coordinates):
+        """
+        Returns the equivalent Yaw and Pitch angles from the Person Sensor for the given frame coordinates.
+        
+        Parameters:
+            coordinates - Coordinates to convert (array or tuple)
+        Returns:
+            Yaw & Pitch (tuple)
+        """
         # Estimated x/y angle offset of face centre
-        if (coords == -1 and face == -1):
+        if (coordinates == -1):
             return -1
-        x = int (coords[0] * self.fovScale[0])
-        y = int (coords[1] * self.fovScale[1])
-        return [x,y]
+        x = int (coordinates[0] * self.fovScale[0])
+        y = int (coordinates[1] * self.fovScale[1])
+        return (x,y)
 
 def main():
     ps = PersonSensor()
