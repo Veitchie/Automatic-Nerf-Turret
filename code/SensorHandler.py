@@ -13,9 +13,11 @@ class SensorHandler:
         self._lidar = VL53L0X()
         
         # Setup Person Sensor
+        print("setting up Person Sensor...")
         self._personSensor = PersonSensor()
-
         self._psFaceCentreOffset = (-12,-10)
+
+        self._continousUpdate = False
         
         print("Setup complete.")
     
@@ -24,6 +26,10 @@ class SensorHandler:
 
     def update(self):
         self._personSensor.update()
+
+    def continousUpdate(self):
+        while self._continousUpdate:
+            self.update()
 
     def getDistance(self):
         # Return distance in mm
