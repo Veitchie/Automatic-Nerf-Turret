@@ -53,12 +53,12 @@ class PersonSensor:
     
     def start(self):
         self.continousEnabled = True
-        Thread(target=self.continousUpdate, args=(), daemon=True).start()
+        Thread(target=self._continousUpdate, args=(), daemon=True).start()
     
     def stop(self):
         self.continousEnabled = False
     
-    def continousUpdate(self):
+    def _continousUpdate(self):
         while self.continousEnabled:
             faces = self.update()
             if faces != -1:
@@ -77,15 +77,16 @@ class PersonSensor:
             WHen no faces are detected:
                 -1
         """
-        attemptingConnection = True
-        while attemptingConnection:
-            try:
-                read_bytes = self.i2c_handle.read(self.PERSON_SENSOR_RESULT_BYTE_COUNT)
-                break
-            except OSError as error:
-                print("No person sensor data found")
-                print(error)
-                time.sleep(self.PERSON_SENSOR_DELAY)
+
+        # Read data from I2C, if there is none return -1
+        try:
+            read_bytes = self.i2c_handle.read(self.PERSON_SENSOR_RESULT_BYTE_COUNT)
+        except OSError as error:
+            print("No person sensor data found")
+            print(error)
+            return -1
+
+        # unpack bytes and get number of faces detected
         offset = 0
         (pad1, pad2, payload_bytes) = struct.unpack_from(self.PERSON_SENSOR_I2C_HEADER_FORMAT, read_bytes, offset)
         offset = offset + self.PERSON_SENSOR_I2C_HEADER_BYTE_COUNT
@@ -94,6 +95,7 @@ class PersonSensor:
         num_faces = int(num_faces[0])
         offset = offset + 1
 
+        # Create an array of faces (dictionaries containing face data)
         faces = []
         for i in range(num_faces):
             (box_confidence, box_left, box_top, box_right, box_bottom, id_confidence, id, is_facing) = struct.unpack_from(self.PERSON_SENSOR_FACE_FORMAT, read_bytes, offset)
@@ -118,15 +120,24 @@ class PersonSensor:
                 "is_facing": is_facing,
             }
             faces.append(face)
-        #print(faces)
-            
-        if (num_faces > 0):
-            return faces#getFaceCoords(faces[0])
-        return -1
         
-        #checksum = struct.unpack_from("H", read_bytes, offset)
+        # Return faces or -1 if none
+        if (num_faces > 0):
+            return faces
+        return -1
     
     def getFaces(self):
+        '''
+        Return the latest array of faces captured by the sensor
+        
+        Parameters:
+            NONE
+        Returns:
+            When faces are detected:
+                Array of faces
+            WHen no faces are detected:
+                -1
+        '''
         if self.continousEnabled:
             faces = self.faces
             self.faces = -1
@@ -134,39 +145,16 @@ class PersonSensor:
             
         else:
             return self.update()
+        
+    def _getUnique(self, face):
+        if (face != self.previousValue):
+            self.previousValue = face
+            return face
+        return -1
     
     def getLargestFace(self, confidence = -1, uniqueValues = False):
-        faces = self.getFaces()
-            
-        if (faces == -1):
-            if uniqueValues:
-                return -1, False
-            return -1
-            
-        value = self.getAngleEstimation(self.findLargestFace(faces, confidence))
-        
-        if uniqueValues:
-            if (value != self.previousValue):
-                self.previousValue = value
-                return value, True
-            self.previousValue = value
-            return value, False
-        return value
-    
-    def getMostConfident(self, confidence = -1, uniqueValues = False):
-        faces = self.getFaces()
-        
-        if (faces == -1):
-            if uniqueValues:
-                return -1, False
-            return -1
-        
-        for i in range(len(faces)):
-            print()
-            
-    def findLargestFace(self, faces, confidence = -1):
         """
-        Takes an array of faces and returns the face with the largest box area.
+        Get most recent faces and return the face with the largest box area.
         
         Parameters:
             Array of faces
@@ -176,6 +164,13 @@ class PersonSensor:
             When there are no faces:
                 -1
         """
+
+        # Get all faces and return if there are none
+        faces = self.getFaces()
+        if (faces == -1):
+            return -1
+
+        # Get face from array with largest area
         max = -1
         index = -1
         for i in range(len(faces)):
@@ -189,12 +184,55 @@ class PersonSensor:
                     max = area
                     index = i
         if (index > -1): # Sanity check
-            return faces[index]["from_centre"]
+            face = faces[index]
+            # Return largest face or -1 if location matches previous location
+            if uniqueValues:
+                return self._getUnique(face)
+            return face
         return -1
     
-    def getAngleEstimation(self, coords):
+    def getMostConfidentFace(self, confidence = -1, uniqueValues = False):
+        """
+        Get most recent faces and return the face with the largest confidence.
+        
+        Parameters:
+            Array of faces
+        Returns:
+            When there are faces:
+                The face with the largest confidence
+            When there are no faces:
+                -1
+        """
+
+        # Get all faces and return if there are none
+        faces = self.getFaces()
+        if (faces == -1):
+            return -1
+
+        # Get face from array with largest confidence
+        max = -1
+        index = -1
+        for i in range(len(faces)):
+            faceConfidence = faces[i]["box_confidence"]
+            if (max < faceConfidence):
+                if (confidence != -1):
+                    if (faces[i]["box_confidence"] >= confidence):
+                        max = faceConfidence
+                        index = i
+                else:
+                    max = faceConfidence
+                    index = i
+        if (index > -1): # Sanity check
+            face = faces[index]
+            # Return largest face or -1 if location matches previous location
+            if uniqueValues:
+                return self._getUnique(face)
+            return face
+        return -1
+    
+    def getAngleEstimation(self, coords = -1, face = -1):
         # Estimated x/y angle offset of face centre
-        if (coords == -1):
+        if (coords == -1 and face == -1):
             return -1
         x = int (coords[0] * self.fovScale[0])
         y = int (coords[1] * self.fovScale[1])
@@ -204,12 +242,10 @@ def main():
     ps = PersonSensor()
 
     x = ""
-    a = 10
     while not x == "c":
-        face, unique = ps.getLargestFace(confidence = 95, uniqueValues = True)
+        face = ps.getMostConfidentFace()
         if (face != -1):
-            if (unique):
-                print(face)
+            print(face)
         x = input()
 
 
