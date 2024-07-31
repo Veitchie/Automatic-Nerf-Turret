@@ -16,8 +16,12 @@ class SensorHandler:
         print("setting up Person Sensor...")
         self._personSensor = PersonSensor()
         self._psFaceCentreOffset = (-12,-10)
+        self._personSensorMode = "Largest_Area" # Or Most_Confident
 
-        self._continousUpdate = False
+        # Handler variables
+        self._facesDetected = False
+        self._continuousUpdate = False
+        self._face = -1
         
         print("Setup complete.")
     
@@ -25,10 +29,16 @@ class SensorHandler:
         self._personSensor.start()
 
     def update(self):
-        self._personSensor.update()
+        if self._personSensorMode == "Largest_Area":
+            self._face = self._personSensor.getLargestFace()
+        if self._face != -1:
+            self._facesDetected = True
+        else:
+            self._facesDetected = False
+        return self._face
 
-    def continousUpdate(self):
-        while self._continousUpdate:
+    def continuousUpdate(self):
+        while self._continuousUpdate:
             self.update()
 
     def getDistance(self):
@@ -46,8 +56,8 @@ class SensorHandler:
     
     def isFaceCentred(self, face):
         centre = self._psFaceCentreOffset
-        threshhold  = 3
-        if abs(face[0] - centre[0]) <= threshhold and abs(face[1] - centre[1]) <= threshhold:
+        threshold  = 3
+        if abs(face[0] - centre[0]) <= threshold and abs(face[1] - centre[1]) <= threshold:
             print("Face detected: %smm away" % (self.getDistance()))
             return True
         return False
@@ -56,16 +66,28 @@ class SensorHandler:
         with self._lidar.continuous_mode():
             while True:
                 print("Range: {0}mm".format(self._lidar.range))
+    
+    def facesDetected(self):
+        return self._facesDetected
+
+    def getFace(self):
+        return self._face
+    
+    def getFaceCoordinates(self):
+        if self.facesDetected():
+            return self._personSensor.getAngleEstimate(self.getFace()["box_centre"])
+        return -1
 
 def main():
     sensorHandler = SensorHandler()
 
-    while True:
+    x = ""
+    while not x == "c":
         sensorHandler.update()
-        face = sensorHandler.getFaceFromCentre(confidence = 80, uniqueValues = True)
-        if (face != -1):
-            print(face)
-            sensorHandler.isFaceCentred(face)
+        if sensorHandler.facesDetected():
+            print(sensorHandler.getFaceCoordinates())
+        
+        x = input()
     
     
     
