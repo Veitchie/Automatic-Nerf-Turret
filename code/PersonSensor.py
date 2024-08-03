@@ -43,7 +43,7 @@ class PersonSensor:
         self.continuousEnabled = False
         self.fov = 110
         resolution = [1280,720]
-        self.fovScale = [self.fov / 255, (self.fov * (resolution[1] / resolution[0])) / 255]
+        self.fovScale = (self.fov / 255, (self.fov * (resolution[1] / resolution[0])) / 255)
         self.faces = -1
         self.previousValue = [0,0]
         
@@ -230,7 +230,7 @@ class PersonSensor:
             return face
         return -1
     
-    def getAngleEstimation(self, coordinates):
+    def getAngleEstimation(self, coordinates, fromCentre = False):
         """
         Returns the equivalent Yaw and Pitch angles from the Person Sensor for the given frame coordinates.
         
@@ -244,6 +244,8 @@ class PersonSensor:
             return -1
         x = int (coordinates[0] * self.fovScale[0])
         y = int (coordinates[1] * self.fovScale[1])
+        if fromCentre:
+            return (x - self.fov/2, y - self.fov/2)
         return (x,y)
 
 def main():
@@ -254,7 +256,6 @@ def main():
         face = ps.getMostConfidentFace()
         if (face != -1):
             print(face)
-        x = input()
 
 
 

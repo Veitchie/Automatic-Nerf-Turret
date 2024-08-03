@@ -73,9 +73,9 @@ class SensorHandler:
     def getFace(self):
         return self._face
     
-    def getFaceCoordinates(self):
+    def getFaceAngleOffset(self):
         if self.facesDetected():
-            return self._personSensor.getAngleEstimate(self.getFace()["box_centre"])
+            return self._personSensor.getAngleEstimation(self.getFace()["box_centre"], fromCentre = True)
         return -1
 
 def main():
@@ -85,7 +85,7 @@ def main():
     while not x == "c":
         sensorHandler.update()
         if sensorHandler.facesDetected():
-            print(sensorHandler.getFaceCoordinates())
+            print(sensorHandler.getFaceAngleOffset())
         
         x = input()
     
