@@ -1,5 +1,40 @@
 from PersonSensor import PersonSensor
+from Camera import Camera
 from LIDAR import VL53L0X
+from threading import Thread
+from enum import Enum
+import time
+
+def returnGreaterValue(key, arrayOfDictionaries):
+    length = len(arrayOfDictionaries)
+    if length == 0:
+        return -1
+    index = 0
+    max = 0
+    for i in range(length):
+        item = arrayOfDictionaries[i][key]
+        if item > max:
+            index = i
+            max = item
+    return arrayOfDictionaries[index]
+
+def returnGreaterIndex(key, arrayOfDictionaries):
+    length = len(arrayOfDictionaries)
+    if length == 0:
+        return -1
+    index = 0
+    max = 0
+    for i in range(length):
+        item = arrayOfDictionaries[i][key]
+        size = item[0] * item[1]
+        if size > max:
+            index = i
+            max = size
+    return arrayOfDictionaries[index]
+
+class _PersonSensorMode(Enum):
+    LargestArea = 1
+    MostConfident = 2
 
 class SensorHandler:
     """
@@ -10,28 +45,163 @@ class SensorHandler:
         
         # Setup VL53L0X
         print("Setting up VL53L0X...")        
-        self._lidar = VL53L0X()
+        #self._lidar = VL53L0X()
         
         # Setup Person Sensor
+        print("setting up Person Sensor...")
         self._personSensor = PersonSensor()
+        self._psFaceCentreOffset = (3,-30)
+        self._personSensorMode = _PersonSensorMode.MostConfident
+
+        # Setup PiCamera
+        print("Setting up PiCamera...")
+        self._camera = Camera(resolution=(640,480))
+        self._camera.start()
+
+        # Handler variables & stuff
+        print("Setting up Sensor Handler attributes...")
+        self._facesDetected = False
+        self._continuousUpdate = False
+        self._face = -1
+        self._faceFromCamera = False
+        self._updateThread = Thread(target=self._continuousUpdateStart, args=(), daemon=True)
+        self._currentTargets = []
+        self._currentDistance = 0
+        self._lastPositive = (-1, False)
         
         print("Setup complete.")
     
-    def getDistance(self):
-        # Return distance in mm
-        return self._lidar.range
+    def start(self):
+        """Start the update thread to continuously read sensor data."""
+        self._continuousUpdate = True
+        self._updateThread.start()
     
-    def getFaceFromCentre(self, confidence = 95, uniqueValues = True):
-        return self._personSensor.getLargestFace(confidence, uniqueValues)
+    def stop(self):
+        """Exit running update thread."""
+        self._continuousUpdate = False
 
-    def continuousDistance(self):
-        with self._lidar.continuous_mode():
-            while True:
-                print("Range: {0}mm".format(self._lidar.range))
+    def setFaceCentreOffset(self, newCoords):
+        """Set new face offset values.
+        Parameters:
+            newCoords (tuple / array of ints) : New coordinates denoting the error from centre i.e (2, -5)"""
+        self._psFaceCentreOffset = newCoords
+
+    def faceFusion(self, camera = None, ps = None):
+        if not camera and not ps:
+            return None
+        if not (camera != -1 and ps != -1):
+            if camera != -1:
+                return camera
+            return ps
+        
+        threshold = 5
+        fused = []
+        
+        for i in range(len(camera)):
+            for j in range(len(ps)):
+                a = camera[i]["box_centre"]
+                b = ps[j]["box_centre"]
+
+                x, y, z, k = a[0], a[1], b[0], b[1]
+
+                if abs(x - z) < threshold and abs(y - k) < threshold:
+                    fused.append(ps[j])
+                    break
+            fused.append(camera[i])
+        return fused
+
+
+    def _update(self):
+        psFaces = self._personSensor.getFaces()
+        camFaces = self._camera.detectFaces(self._camera.getFrame())
+        self._currentTargets = self.faceFusion(camera=camFaces, ps=psFaces)
+        
+        if len(self._currentTargets) > 0:
+            self._face = returnGreaterIndex("fov_range", self._currentTargets)
+            self._faceFromCamera = True if (self._face["device_id"] == "camera") else False
+
+        # Update LIDAR
+        self._currentDistance = self.getDistance()
+
+        if self._face != -1:
+            self._facesDetected = True
+            self._lastPositive = (self._face, self._faceFromCamera)
+        else:
+            self._facesDetected = False
+        return self._face
+
+
+    def _continuousUpdateStart(self):
+        while self._continuousUpdate:
+            self._update()
+
+    def getDistance(self):
+        """Return distance in mm"""
+        return -1#self._lidar.range
+    
+    def facesDetected(self):
+        """Update the sensors and return True if faces are detected.
+        Returns:
+            When faces are detected:
+                True (boolean)
+            When no faces are detected:
+                False (boolean)"""
+        if self._continuousUpdate:
+            return self._facesDetected
+        self._update()
+        return self._facesDetected
+
+    def getFace(self):
+        """
+        Return the currently detected face.
+
+        Returns:
+            When there are faces:
+                Face Data (dictionary)
+            When there are no faces:
+                -1"""
+        if self._continuousUpdate:
+            return self._face
+        self._update()
+        face = self._face
+        self._face = -1
+        return face, self._faceFromCamera
+
+    def getLastPositive(self):
+        return self._lastPositive[0], self._lastPositive[1]
+    
+    def getFaceAngleOffset(self, face = None):
+        if face is None:
+            face, sensor = self.getFace()#self.getLastPositive()
+        if face == -1:
+            return -1
+        face = face["box_centre"]
+        if self._facesDetected:
+            if sensor:
+                centreWithOffset = self._camera.getAngleEstimation(face, fromCentre = True)
+            else:
+                centreWithoutOffset = self._personSensor.getAngleEstimation(face, fromCentre = True)
+                centreWithOffset = (centreWithoutOffset[0] - self._psFaceCentreOffset[0], (centreWithoutOffset[1] - self._psFaceCentreOffset[1]) * -1)
+            return centreWithOffset
+        return -1
 
 def main():
     sensorHandler = SensorHandler()
-    print("%smm" % (sensorHandler.getDistance()))
+
+    thresh = 2
+    command =  ""
+    while command not in ["exit", "close", "c"]:
+        command = (input(">")).lower()
+        match command:
+            case "track":
+                if sensorHandler.facesDetected():
+                    coords = sensorHandler.getFaceAngleOffset()
+                    print("Face detected at %s" % (coords,))
+                    if abs(coords[0]) < thresh and abs(coords[1]) < thresh:
+                        print("%smm" % (sensorHandler.getDistance()))
+            case "dist":
+                time.sleep(5)
+                print("%smm" % (sensorHandler.getDistance()))
     
     
     

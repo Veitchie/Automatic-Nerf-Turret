@@ -1,2 +1,6 @@
-todo.txt
-code/__pycache__
+/todo.txt
+/code/__pycache__
+/turret-dev/
+*.xml
+/*.png
+/*.jpg

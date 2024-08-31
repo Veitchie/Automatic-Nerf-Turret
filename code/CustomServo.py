@@ -10,6 +10,7 @@ class Servo:
         minPulse = 500, maxPulse = 2500,
         minAngle = 0, maxAngle = 180,
         restAngle = 90,
+        centreAngle = None,
         maxSpeed = 250,
         acceleration = 2000,
         adjustment = 0,
@@ -29,6 +30,9 @@ class Servo:
             adjustment (int): Servo horn ange adjustment.
             invert (bool): Inverts the servo if it moves the wrong way.
         """
+
+        if centreAngle is None:
+            centreAngle = restAngle
         
         # Establish all parameters of the servo
         self.servo = servo
@@ -38,7 +42,10 @@ class Servo:
         self.minAngle = minAngle
         self.maxAngle = maxAngle
         self.restAngle = restAngle
+        self.centreAngle = centreAngle
         self.maxSpeed = maxSpeed
+        self.acceleration = acceleration
+        self.adjustment = adjustment
         self.invert = invert
         self.name = name
         
@@ -47,17 +54,19 @@ class Servo:
         self.servo.set_pulse_width_range(minPulse, maxPulse)
         
         # Variables of the servo
-        self.acceleration = acceleration
         self.currentJump = 0
         self.currentSpeed = 0
         self.prevSpeed = 0
-        self.currentAngle = self.restAngle
+        self.speed = 0
+        self.currentAngle = self.restAngle + self.adjustment
         self.targetAngle = self.currentAngle
-        self.servo.angle = self.restAngle
         self.direction = 0
-        self.adjustment = adjustment
         self.atPos = False
         self.targetFrozen = False
+        if self.invert:
+            self.servo.angle = self.dom - self.restAngle
+        else:
+            self.servo.angle = self.restAngle
         
         self.timeAtLastUpdate = timer()
     
@@ -68,23 +77,28 @@ class Servo:
         return (target - current) / abs(target - current)
     
     
-    def setAngle(self, target):
+    def setAngle(self, target, throttle = 1, fromCentre = False):
         """
         Returns:
-            self.update() : If the Update thread crashes, this will continue to move the servo without acceleration
+            At position (boolean)
         """
-        target = target + self.adjustment
+        if fromCentre:
+            target = target + self.centreAngle#(self.dom // 2)
+
+        if target == self.targetAngle:
+            self.atPos = True
+            return True
+        target = target
         target = min(target, self.maxAngle)
         target = max(target, self.minAngle)
         
-        if (self.invert):
-            target = self.dom - target
-        
         self.direction = self.getDirection(self.currentAngle, target)
         self.targetAngle = target
-        #print("CustomServo-setAngle: Setting %s's targetAngle to %s" % (self.name,target))
-        self.atPos = False
-        return self.update()
+        self.speed = abs(throttle) * self.maxSpeed
+        return self.atPos
+    
+    def stop(self):
+        self.setAngle(self.currentAngle)
     
     def rest(self):
         self.setAngle(self.restAngle)
@@ -103,12 +117,15 @@ class Servo:
         self.timeAtLastUpdate = currentUptime
         
         targetAngle = self.targetAngle
+
+        #if self.invert:
+        #    targetAngle = self.dom - targetAngle
         
         if (self.currentAngle == targetAngle or abs(self.currentAngle - targetAngle) < 1):
             self.currentSpeed = 0
-            
+            self.currentAngle = targetAngle
             self.atPos = True
-            return True
+            #return True
         
         else:
         
@@ -128,8 +145,8 @@ class Servo:
                 
                 decel = True
             
-            if (abs(self.currentSpeed) > self.maxSpeed):
-                self.currentSpeed = self.maxSpeed * (self.currentSpeed / abs(self.currentSpeed))
+            if (abs(self.currentSpeed) > self.speed):
+                self.currentSpeed = self.speed * (self.currentSpeed / abs(self.currentSpeed))
             
             self.currentJump = self.currentSpeed * timeElapsed
             
@@ -148,7 +165,10 @@ class Servo:
                 
 
         #print("CustomServo-update: Moving %s to %s" % (self.name, self.currentAngle))
-        self.servo.angle = self.currentAngle # Move servo to currentAngle
+        if (self.invert):
+            self.servo.angle = self.adjustment + self.dom - self.currentAngle # Move servo to currentAngle
+        else:
+            self.servo.angle = self.adjustment + self.currentAngle
         self.prevSpeed = self.currentSpeed
            
             
@@ -159,7 +179,29 @@ class Servo:
         self.adjustment = angle
         self.setAngle(self.targetAngle)
         
-    def getCurrentAngle(self):
-        if (self.invert):
-            return self.dom - self.servo.angle
-        return self.servo.angle
+    def getCurrentAngle(self, fromCentre = False):
+        currentAngle = self.servo.angle
+        if self.invert:
+            currentAngle = self.dom - currentAngle - self.adjustment 
+        if fromCentre:
+            return currentAngle - self.centreAngle - self.adjustment 
+        return currentAngle
+
+    def getData(self):
+        """ data = {
+            "dom" : self.dom,
+            "minPulse": self.minPulse,
+            "maxPulse": self.maxPulse,
+            "minAngle": self.minAngle,
+            "maxAngle": self.maxAngle,
+            "restAngle": self.restAngle,
+            "maxSpeed": self.maxSpeed,
+            "acceleration": self.acceleration,
+            "adjustment": self.adjustment,
+            "invert": self.invert,
+            "name": self.name
+        } """
+        return vars(self)#data
+    
+    def atPosition(self):
+        return self.atPos
