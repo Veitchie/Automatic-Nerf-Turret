@@ -58,9 +58,9 @@ class Servo:
         self.currentSpeed = 0
         self.prevSpeed = 0
         self.speed = 0
-        self.currentAngle = self.restAngle + self.adjustment
-        self.targetAngle = self.currentAngle
-        self.direction = 0
+        self.currentAngle = self.restAngle + self.adjustment    # The angle that the sevro is set to, if the servo is inverted this values is changed as it's passed to adafruit_servokit
+        self.targetAngle = self.currentAngle                    # The current target angle the servo is trying to reach
+        self.direction = 0                                      # Direction of the target angle relative to the current angle (-1 towards min, +1 towards max)
         self.atPos = False
         self.targetFrozen = False
         if self.invert:
@@ -85,12 +85,12 @@ class Servo:
         if fromCentre:
             target = target + self.centreAngle#(self.dom // 2)
 
+        target = min(target, self.maxAngle)
+        target = max(target, self.minAngle)
+
         if target == self.currentAngle:
             self.atPos = True
             return True
-        target = target
-        target = min(target, self.maxAngle)
-        target = max(target, self.minAngle)
         
         self.direction = self.getDirection(self.currentAngle, target)
         self.targetAngle = target
@@ -105,7 +105,7 @@ class Servo:
     
     
     def adjust(self, val):
-        self.setAngle(self.targetAngle + val)
+        self.setAngle(self.currentAngle + val)
     
     
     def update(self):
@@ -123,18 +123,18 @@ class Servo:
         
         if (self.currentAngle == targetAngle or abs(self.currentAngle - targetAngle) < 1):
             self.currentSpeed = 0
-            self.currentAngle = targetAngle
+            currentAngle = targetAngle + self.adjustment
+            currentAngle = min(self.currentAngle, self.maxAngle)
+            currentAngle = max(self.currentAngle, self.minAngle)
+            self.currentAngle = currentAngle
             self.atPos = True
             #return True
         
         else:
-            self.atPos = False
         
             distanceToTarget = abs(targetAngle - self.currentAngle)
             
             decelerationDistance = ( self.prevSpeed ** 2 ) / ( 2 * self.acceleration )
-            
-            decel = False
             
             if (distanceToTarget > decelerationDistance):
             
@@ -143,11 +143,9 @@ class Servo:
             else:
                 
                 self.currentSpeed -= self.acceleration * timeElapsed * self.direction
-                
-                decel = True
             
             if (abs(self.currentSpeed) > self.speed):
-                self.currentSpeed = self.speed * (self.currentSpeed / abs(self.currentSpeed))
+                self.currentSpeed = self.speed * self.direction#(self.currentSpeed / abs(self.currentSpeed))
             
             self.currentJump = self.currentSpeed * timeElapsed
             
@@ -166,19 +164,26 @@ class Servo:
                 
 
         #print("CustomServo-update: Moving %s to %s" % (self.name, self.currentAngle))
+
         if (self.invert):
-            self.servo.angle = self.adjustment + self.dom - self.currentAngle # Move servo to currentAngle
+            self.__applyAngle(self.adjustment + self.dom - self.currentAngle) # Move servo to currentAngle
         else:
-            self.servo.angle = self.adjustment + self.currentAngle
+            self.__applyAngle(self.adjustment + self.currentAngle)
         self.prevSpeed = self.currentSpeed
            
             
         return self.atPos
-        
+    
+    def __applyAngle(self, angle):
+        angle = min(angle, self.dom)
+        angle = max(angle, 0)
+        try:
+            self.servo.angle = angle
+        except:
+            print("Error on servo: %s, Target: %s, Current: %s, Passed: %s" % (self.name, self.targetAngle, self.currentAngle, angle))
         
     def setAdjustment(self, angle):
         self.adjustment = angle
-        self.setAngle(self.targetAngle)
         
     def getCurrentAngle(self, fromCentre = False):
         currentAngle = self.servo.angle

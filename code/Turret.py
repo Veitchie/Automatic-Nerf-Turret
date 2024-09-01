@@ -126,7 +126,7 @@ class Turret:
             case 1:
                 # Look for faces after a short delay to ensure sensors are stationary
                 facesPresent = self._sensorHandler.facesDetected()
-                if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay and not self._servoHandler.inMotion():
                     face = self._sensorHandler.getFace()
                     if face != -1:
                         coords = (face["yaw_offset"], face["pitch_offset"])
@@ -146,7 +146,7 @@ class Turret:
             #########################################################################
             case 2:
                 facesPresent = self._sensorHandler.facesDetected()
-                if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay and not self._servoHandler.inMotion():
                     face = self._sensorHandler.getFace()
                     if face != -1:
                         coords = (face["yaw_offset"], face["pitch_offset"])

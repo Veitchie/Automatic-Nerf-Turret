@@ -95,8 +95,8 @@ class SensorHandler:
             return ps
         
         threshold = 5
-        print("camera / %s:\t%s" % (len(camera),camera))
-        print("person / %s:\t%s" % (len(ps),ps))
+        #print("camera / %s:\t%s" % (len(camera),camera))
+        #print("person / %s:\t%s" % (len(ps),ps))
         
         arrayMatch = False
         for i in range(len(camera)):
@@ -115,7 +115,7 @@ class SensorHandler:
                 ps.append(camera[i])
             arrayMatch = False
 
-        print("fused / %s:\t%s" % (len(ps),ps))
+        #print("fused / %s:\t%s" % (len(ps),ps))
         return ps
 
 
@@ -123,6 +123,7 @@ class SensorHandler:
         psFaces = self._personSensor.getFaces()
         camFaces = self._camera.detectFaces(self._camera.getFrame())
         self._currentTargets = self.faceFusion(camera=camFaces, ps=psFaces)
+        print("Current Targets: %s", self._currentTargets)
         
         if len(self._currentTargets) > 0:
             self._face = returnGreaterIndex("fov_range", self._currentTargets)

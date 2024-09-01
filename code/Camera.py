@@ -42,7 +42,7 @@ class Camera:
 
     def detectFaces(self, image = None):
         if image is None:
-            image = self._frame
+            return []
         if self._clasifier is None:
             self._clasifier = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
         
@@ -89,7 +89,9 @@ class Camera:
         if not self.__continousUpdate:
             self._frame = self.__picam.capture_array()
             return self._frame
-        return self._frame
+        frame = self._frame
+        self._frame = None
+        return frame
 
 if __name__ == "__main__":
     
