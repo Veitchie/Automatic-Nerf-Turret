@@ -125,7 +125,7 @@ class PersonSensor:
                 "is_facing": is_facing,
                 "device_id" : "person_sensor",
                 "yaw_offset" : angle_offset[0],
-                "pitch_offset" : angle_offset[1],
+                "pitch_offset" : angle_offset[1] * -1,
                 "fov_range" : angle_range
             }
             faces.append(face)

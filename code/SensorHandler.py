@@ -95,20 +95,28 @@ class SensorHandler:
             return ps
         
         threshold = 5
-        fused = []
+        print("camera / %s:\t%s" % (len(camera),camera))
+        print("person / %s:\t%s" % (len(ps),ps))
         
+        arrayMatch = False
         for i in range(len(camera)):
             for j in range(len(ps)):
+
                 a = camera[i]["box_centre"]
                 b = ps[j]["box_centre"]
 
                 x, y, z, k = a[0], a[1], b[0], b[1]
-
-                if abs(x - z) < threshold and abs(y - k) < threshold:
-                    fused.append(ps[j])
+                #if abs(x - z) < threshold and abs(y - k) < threshold:
+                if abs(camera[i]["yaw_offset"] - ps[j]["yaw_offset"]) < threshold and abs(camera[i]["pitch_offset"] - ps[j]["pitch_offset"]) < threshold:
+                    arrayMatch = True
                     break
-            fused.append(camera[i])
-        return fused
+            
+            if not arrayMatch:
+                ps.append(camera[i])
+            arrayMatch = False
+
+        print("fused / %s:\t%s" % (len(ps),ps))
+        return ps
 
 
     def _update(self):
@@ -160,12 +168,12 @@ class SensorHandler:
                 Face Data (dictionary)
             When there are no faces:
                 -1"""
-        if self._continuousUpdate:
-            return self._face
-        self._update()
+        if not self._continuousUpdate:
+            self._update()
         face = self._face
         self._face = -1
-        return face, self._faceFromCamera
+        self._facesDetected =False
+        return face
 
     def getLastPositive(self):
         return self._lastPositive[0], self._lastPositive[1]
@@ -181,7 +189,7 @@ class SensorHandler:
                 centreWithOffset = self._camera.getAngleEstimation(face, fromCentre = True)
             else:
                 centreWithoutOffset = self._personSensor.getAngleEstimation(face, fromCentre = True)
-                centreWithOffset = (centreWithoutOffset[0] - self._psFaceCentreOffset[0], (centreWithoutOffset[1] - self._psFaceCentreOffset[1]) * -1)
+                centreWithOffset = (centreWithoutOffset[0] - self._psFaceCentreOffset[0], (centreWithoutOffset[1] - self._psFaceCentreOffset[1]))
             return centreWithOffset
         return -1
 
