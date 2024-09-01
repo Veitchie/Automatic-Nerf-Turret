@@ -85,7 +85,7 @@ class Servo:
         if fromCentre:
             target = target + self.centreAngle#(self.dom // 2)
 
-        if target == self.targetAngle:
+        if target == self.currentAngle:
             self.atPos = True
             return True
         target = target
@@ -128,6 +128,7 @@ class Servo:
             #return True
         
         else:
+            self.atPos = False
         
             distanceToTarget = abs(targetAngle - self.currentAngle)
             
@@ -204,4 +205,5 @@ class Servo:
         return vars(self)#data
     
     def atPosition(self):
+        #print("Current angle: %s, Target angle: %s, At Pos: %s" % (self.currentAngle , self.targetAngle, self.atPos))
         return self.atPos
