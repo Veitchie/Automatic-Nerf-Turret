@@ -32,7 +32,7 @@ class Turret:
         self._scanningPositions = [ [servoData[0]["minAngle"], servoData[1]["restAngle"]], [servoData[1]["maxAngle"], servoData[1]["restAngle"]] ]
         self._scanningIndex = 0
         self._scanningPositionTime = timer()
-        self._scanningDelay = 0.1
+        self._scanningDelay = 0.2
         self._scanningTimeout = 1
         self._scanningSpeed = 0.25
         self._scanningThreshold = 1
@@ -125,45 +125,47 @@ class Turret:
             ########################################################
             case 1:
                 # Look for faces after a short delay to ensure sensors are stationary
-                facesPresent = self._sensorHandler.facesDetected()
-                if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay and not self._servoHandler.inMotion():
-                    face = self._sensorHandler.getFace()
-                    if face != -1:
-                        coords = (face["yaw_offset"], face["pitch_offset"])
-                        #print("Face Detected! Moving to target: %s" % (coords,))
-                        print("Face confirmed, moving..",face)
-                        self._servoHandler.adjustCamera(coords)
-                        self._scanningMode = 2
+                if not self._servoHandler.inMotion():
+                    facesPresent = self._sensorHandler.facesDetected()
+                    if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                        face = self._sensorHandler.getFace()
+                        if face != -1:
+                            coords = (face["yaw_offset"], face["pitch_offset"])
+                            #print("Face Detected! Moving to target: %s" % (coords,))
+                            print("Face confirmed, moving..",face)
+                            self._servoHandler.adjustCamera(coords)
+                            self._scanningMode = 2
+                            self._scanningPositionTime = timer()
+                        
+                    # If no targets are detected within the delay window, resume scanning and move to case 1
+                    if not facesPresent and (timer() - self._scanningPositionTime) > self._scanningTimeout:
+                        print("Must've been the wind...")
+                        self._scanningMode = 0
                         self._scanningPositionTime = timer()
-                    
-                # If no targets are detected within the delay window, resume scanning and move to case 1
-                if not facesPresent and (timer() - self._scanningPositionTime) > self._scanningTimeout:
-                    print("Must've been the wind...")
-                    self._scanningMode = 0
-                    self._scanningPositionTime = timer()
 
             # Faces were detected and the sensors will move to the estimated location
             #########################################################################
             case 2:
-                facesPresent = self._sensorHandler.facesDetected()
-                if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay and not self._servoHandler.inMotion():
-                    face = self._sensorHandler.getFace()
-                    if face != -1:
-                        coords = (face["yaw_offset"], face["pitch_offset"])
+                if not self._servoHandler.inMotion():
+                    facesPresent = self._sensorHandler.facesDetected()
+                    if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                        face = self._sensorHandler.getFace()
+                        if face != -1:
+                            coords = (face["yaw_offset"], face["pitch_offset"])
+                            self._scanningPositionTime = timer()
+                            #print("Adjusting position, detection at: %s" % (coords,))
+                            if coords[0] <= self._scanningThreshold and coords[1] <= self._scanningThreshold:
+                                dist = self._sensorHandler.getDistance()
+                                #print("Approx. Distance: %smm, confidence level: %s" % (dist, face["box_confidence"]))
+                                self._matchCamera(distance = dist)
+                                print("Aiming turret...",face)
+                            else:
+                                self._servoHandler.slideCamera(coords)
+                                print("Adjusting aim..",face)
+                    elif not facesPresent and (timer() - self._scanningPositionTime) > self._scanningTimeout:
+                        print("Must've been the wind...")
+                        self._scanningMode = 0
                         self._scanningPositionTime = timer()
-                        #print("Adjusting position, detection at: %s" % (coords,))
-                        if coords[0] <= self._scanningThreshold and coords[1] <= self._scanningThreshold:
-                            dist = self._sensorHandler.getDistance()
-                            #print("Approx. Distance: %smm, confidence level: %s" % (dist, face["box_confidence"]))
-                            self._matchCamera(distance = dist)
-                            print("Aiming turrey...",face)
-                        else:
-                            self._servoHandler.adjustCamera(coords)
-                            print("Adjusting aim..",face)
-                elif not facesPresent and (timer() - self._scanningPositionTime) > self._scanningTimeout:
-                    print("Must've been the wind...")
-                    self._scanningMode = 0
-                    self._scanningPositionTime = timer()
                 
 
 

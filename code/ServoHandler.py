@@ -17,8 +17,8 @@ class ServoHandler:
         self._prime = Servo(self.kit.servo[2], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=250, acceleration=2000, name = "prime")
         self._trigger = Servo(self.kit.servo[3], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=130, maxSpeed=250, acceleration=2000, name = "trigger")
 
-        self.trackYaw = Servo(self.kit.servo[4], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=250, acceleration=2000, invert=True, name = "trackYaw")
-        self.trackPitch = Servo(self.kit.servo[5], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=250, acceleration=2000, adjustment=20, name = "trackPitch")
+        self.trackYaw = Servo(self.kit.servo[4], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=150, acceleration=2000, invert=True, name = "trackYaw")
+        self.trackPitch = Servo(self.kit.servo[5], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=150, acceleration=2000, adjustment=20, name = "trackPitch")
         
         timerStartValue = timer()
 
@@ -73,6 +73,10 @@ class ServoHandler:
     def adjustCamera(self, angles):
         self.trackYaw.adjust(angles[0])
         self.trackPitch.adjust(angles[1])
+    
+    def slideCamera(self, angles):
+        self.trackYaw.adjust((0.2 * angles[0]) + (0.8 * self.trackYaw.currentAngle))
+        self.trackPitch.adjust((0.2 * angles[1]) + (0.8 * self.trackPitch.currentAngle))
         
     def setCamera(self, angles, throttle = 1, fromCentre = False):
         self.trackYaw.setAngle(angles[0], throttle = throttle, fromCentre=fromCentre)

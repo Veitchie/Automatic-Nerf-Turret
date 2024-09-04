@@ -123,7 +123,7 @@ class SensorHandler:
         psFaces = self._personSensor.getFaces()
         camFaces = self._camera.detectFaces(self._camera.getFrame())
         self._currentTargets = self.faceFusion(camera=camFaces, ps=psFaces)
-        print("Current Targets: %s", self._currentTargets)
+        #print("Current Targets: %s", self._currentTargets)
         
         if len(self._currentTargets) > 0:
             self._face = returnGreaterIndex("fov_range", self._currentTargets)

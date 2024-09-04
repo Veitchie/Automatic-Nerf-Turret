@@ -88,9 +88,9 @@ class Servo:
         target = min(target, self.maxAngle)
         target = max(target, self.minAngle)
 
-        if target == self.currentAngle:
-            self.atPos = True
-            return True
+        #if target == self.currentAngle:
+        #    self.atPos = True
+        #    return True
         
         self.direction = self.getDirection(self.currentAngle, target)
         self.targetAngle = target
@@ -108,9 +108,7 @@ class Servo:
         self.setAngle(self.currentAngle + val)
     
     
-    def update(self):
-        self.atPos = False
-        
+    def update(self):        
         currentUptime = timer()
     
         timeElapsed = currentUptime - self.timeAtLastUpdate
@@ -131,7 +129,7 @@ class Servo:
             #return True
         
         else:
-        
+            self.atPos = False
             distanceToTarget = abs(targetAngle - self.currentAngle)
             
             decelerationDistance = ( self.prevSpeed ** 2 ) / ( 2 * self.acceleration )
