@@ -22,21 +22,22 @@ Included in the .STEP are models for components like the servos and RPi, some ar
 ### External models <a id='extModels'></a>
 * [SG90 - Micro Servo 9g - Tower Pro](https://grabcad.com/library/sg90-micro-servo-9g-tower-pro-1) (Modified - I increased the height to match my servos)
 * [Raspberry Pi Camera Module v2.1](https://grabcad.com/library/raspberry-pi-camera-4) (Modified - Added ribbon cable)
-* [LM2596 DC-DC Buck Converter](https://grabcad.com/library/lm2596-dc-dc-buck-converter-2)
-* [Raspberry Pi 2 model B](https://grabcad.com/library/raspberry-pi-2-model-b-3d-cad-assembly-model-2)
+* [Raspberry Pi 4 model B](https://grabcad.com/library/raspberry-pi-4-model-b-1)
+* [TF-Luna LiDAR](https://grabcad.com/library/benewake-tf-luna-1)
+* [VTX-212-035-0xx](https://grabcad.com/library/vtx-212-035-0xx-1) Not the same power supply but it matches the measurments so I used it for the designs.
 
 ### Components used
-* VL53L0X LIDAR (A bad choice, only has a range of 1.2m but it's fine for a placeholder)
+* TF-Luna LiDAR Module
 * Person Sensor by Useful Sensors
 * Raspberry Pi Camera Module v2.1
 * 2 x DS3235SG 35Kg 270° Servos
 * 4 x SG90 9g Servos
 * Raspberry Pi 4 Model B ( prev. a Pi2 Model B)
 * Adafruit 16-Channel PWM / Servo HAT for Raspberry Pi
-* LM2596 DC-DC Buck Converter
+* Mini DC 12v-5v 10A power converter
 * 6005 25x47x12mm bearing
 * 12v Switching Power Supply
-* A variety of M3 & M4 bolts and nuts
+* A variety of M2, M3, and M4 bolts & nuts
 * NERF Stryfe blaster
 
 ### Dependencies
@@ -46,6 +47,7 @@ pip install -r requirements.txt
 ```
 * [Adafruit_CircuitPython_VL53L0X](https://github.com/adafruit/Adafruit_CircuitPython_VL53L0X)
 * [Adafruit_CircuitPython_ServoKit](https://github.com/adafruit/Adafruit_CircuitPython_ServoKit)
+* [TF-Luna i2C Driver](https://github.com/ideocentric/tflunai2c)
 
 ## My reasoning's for certain decisions
 

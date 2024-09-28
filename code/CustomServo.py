@@ -104,8 +104,8 @@ class Servo:
         self.setAngle(self.restAngle)
     
     
-    def adjust(self, val):
-        self.setAngle(self.currentAngle + val)
+    def adjust(self, val, throttle = 1):
+        self.setAngle(self.currentAngle + val, throttle=throttle)
     
     
     def update(self):        

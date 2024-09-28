@@ -32,7 +32,7 @@ class Turret:
         self._scanningPositions = [ [servoData[0]["minAngle"], servoData[1]["restAngle"]], [servoData[1]["maxAngle"], servoData[1]["restAngle"]] ]
         self._scanningIndex = 0
         self._scanningPositionTime = timer()
-        self._scanningDelay = 0.2
+        self._scanningDelay = 0.5
         self._scanningTimeout = 1
         self._scanningSpeed = 0.25
         self._scanningThreshold = 1
@@ -78,7 +78,7 @@ class Turret:
 
     def _adjustTrack(self):
         if self._aTrack != 0:
-            self._servoHandler.adjustCamera((self._aTrack,0))
+            self._servoHandler.adjustCamera(self._aTrack)
             self._aTrack = 0
 
     def _debugPS(self):
@@ -108,7 +108,7 @@ class Turret:
                         self._scanningIndex += 1
                         if self._scanningIndex >= len(self._scanningPositions):
                             self._scanningIndex = 0
-                    self._servoHandler.setCamera(self._scanningPositions[self._scanningIndex], self._scanningSpeed)
+                    self._servoHandler.setCamera(self._scanningPositions[self._scanningIndex], throttle = self._scanningSpeed)
 
                 # If something is detected, stop moving to get a better look and move to case 2
                 else:
@@ -125,15 +125,15 @@ class Turret:
             ########################################################
             case 1:
                 # Look for faces after a short delay to ensure sensors are stationary
-                if not self._servoHandler.inMotion():
+                if not self._servoHandler.inMotion()  and (timer() - self._scanningPositionTime) > self._scanningDelay:
                     facesPresent = self._sensorHandler.facesDetected()
-                    if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                    if facesPresent:
                         face = self._sensorHandler.getFace()
                         if face != -1:
                             coords = (face["yaw_offset"], face["pitch_offset"])
                             #print("Face Detected! Moving to target: %s" % (coords,))
                             print("Face confirmed, moving..",face)
-                            self._servoHandler.adjustCamera(coords)
+                            self._servoHandler.adjustCamera(coords, throttle = self._scanningSpeed)
                             self._scanningMode = 2
                             self._scanningPositionTime = timer()
                         
@@ -146,9 +146,9 @@ class Turret:
             # Faces were detected and the sensors will move to the estimated location
             #########################################################################
             case 2:
-                if not self._servoHandler.inMotion():
+                if not self._servoHandler.inMotion() and (timer() - self._scanningPositionTime) > self._scanningDelay:
                     facesPresent = self._sensorHandler.facesDetected()
-                    if facesPresent and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                    if facesPresent:
                         face = self._sensorHandler.getFace()
                         if face != -1:
                             coords = (face["yaw_offset"], face["pitch_offset"])
@@ -169,12 +169,41 @@ class Turret:
                 
 
 
+def parseNumbers(input_str):
+    # Trim whitespace from the input string
+    input_str = input_str.strip()
+
+    # Check for different separators and split the input string
+    if ',' in input_str:
+        parts = input_str.split(',')
+    else:
+        parts = input_str.split()
+
+    # Initialize the variables
+    first = 0
+    second = 0
+
+    # Parse the numbers based on the length of parts
+    if len(parts) == 1:
+        # Single number given
+        first = int(parts[0])
+    elif len(parts) == 2:
+        # Two numbers given
+        first = int(parts[0]) if parts[0].strip() else 0
+        second = int(parts[1])
+
+    # Return the result as a tuple
+    return (first, second)
+
 if __name__ == "__main__":
     turret = Turret()
 
     command =  ""
     while command not in ["exit", "close", "c"]:
-        command = (input(">")).lower()
+        newCommand = (input(">")).lower()
+        if newCommand != "":
+            command = newCommand
+
         match command:
             case "sleep":
                 turret.setMode(_TurretMode.Sleep)
@@ -183,9 +212,9 @@ if __name__ == "__main__":
             case "read ps":
                 turret.setMode(_TurretMode.DebugPS)
             case "adjust":
+                adjust = input(">>")
+                turret._aTrack = parseNumbers(adjust)
                 turret.setMode(_TurretMode.AdjustTrack)
-                adjust = int(input(">>"))
-                turret._aTrack = adjust
             case "agun":
                 turret.setMode(_TurretMode.AdjustGun)
                 adjust = int(input(">>"))

@@ -11,14 +11,14 @@ class ServoHandler:
         
         self.debug = debug
         
-        self.gunYaw = Servo(self.kit.servo[0], dom=270, minPulse=400, maxPulse=2500, minAngle=0, maxAngle=270, restAngle=135, maxSpeed=250, acceleration=2000, adjustment=-5, invert = True, name = "gunYaw")
+        self.gunYaw = Servo(self.kit.servo[0], dom=270, minPulse=400, maxPulse=2500, minAngle=0, maxAngle=270, restAngle=135, maxSpeed=250, acceleration=2000, adjustment=0, invert = True, name = "gunYaw")
         self.gunPitch = Servo(self.kit.servo[1], dom=270, minPulse=400, maxPulse=2500, minAngle=150, maxAngle=210, restAngle=180, maxSpeed=250, acceleration=2000, invert  = True, name = "gunPitch")
         
         self._prime = Servo(self.kit.servo[2], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=250, acceleration=2000, name = "prime")
         self._trigger = Servo(self.kit.servo[3], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=130, maxSpeed=250, acceleration=2000, name = "trigger")
 
         self.trackYaw = Servo(self.kit.servo[4], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=150, acceleration=2000, invert=True, name = "trackYaw")
-        self.trackPitch = Servo(self.kit.servo[5], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=150, acceleration=2000, adjustment=20, name = "trackPitch")
+        self.trackPitch = Servo(self.kit.servo[5], dom=180, minPulse=500, maxPulse=2500, minAngle=10, maxAngle=170, restAngle=90, maxSpeed=150, acceleration=2000, adjustment=0, name = "trackPitch")
         
         timerStartValue = timer()
 
@@ -70,9 +70,9 @@ class ServoHandler:
         b = self.gunPitch.setAngle(angles[1], throttle = throttle, fromCentre=fromCentre)
         return a or b
         
-    def adjustCamera(self, angles):
-        self.trackYaw.adjust(angles[0])
-        self.trackPitch.adjust(angles[1])
+    def adjustCamera(self, angles, throttle = 1):
+        self.trackYaw.adjust(angles[0], throttle=throttle)
+        self.trackPitch.adjust(angles[1], throttle=throttle)
     
     def slideCamera(self, angles):
         self.trackYaw.adjust((0.2 * angles[0]) + (0.8 * self.trackYaw.currentAngle))

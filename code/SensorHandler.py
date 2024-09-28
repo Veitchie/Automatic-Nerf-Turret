@@ -1,6 +1,7 @@
 from PersonSensor import PersonSensor
 from Camera import Camera
 from LIDAR import VL53L0X
+from TfLunaI2C import TfLunaI2C
 from threading import Thread
 from enum import Enum
 import time
@@ -44,8 +45,10 @@ class SensorHandler:
     def __init__(self):
         
         # Setup VL53L0X
-        print("Setting up VL53L0X...")        
+        #print("Setting up VL53L0X...")        
         #self._lidar = VL53L0X()
+        print("Setting up TF-Luna...")
+        self._lidar = TfLunaI2C()
         
         # Setup Person Sensor
         print("setting up Person Sensor...")
@@ -122,7 +125,7 @@ class SensorHandler:
     def _update(self):
         psFaces = self._personSensor.getFaces()
         camFaces = self._camera.detectFaces(self._camera.getFrame())
-        self._currentTargets = self.faceFusion(camera=camFaces, ps=psFaces)
+        self._currentTargets = camFaces#self.faceFusion(ps=camFaces, camera=psFaces) # Swapped them around so if there's matching faces it uses the camera one
         #print("Current Targets: %s", self._currentTargets)
         
         if len(self._currentTargets) > 0:
@@ -145,8 +148,8 @@ class SensorHandler:
             self._update()
 
     def getDistance(self):
-        """Return distance in mm"""
-        return -1#self._lidar.range
+        """Return distance in cm"""
+        return self._lidar.read_data()[0]
     
     def facesDetected(self):
         """Update the sensors and return True if faces are detected.
