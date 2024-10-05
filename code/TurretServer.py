@@ -1,8 +1,8 @@
+from flask import Flask, render_template, Response, request, jsonify
+from flask_socketio import SocketIO, emit
+from threading import Thread
 import cv2
 import time
-from threading import Thread
-from flask import Flask, render_template, Response
-from flask_socketio import SocketIO, emit
 from Turret import Turret, _TurretMode
 
 class TurretServer:
@@ -21,6 +21,7 @@ class TurretServer:
         # Define routes and socket events
         self.app.add_url_rule('/', 'index', self.index)
         self.app.add_url_rule('/video_feed', 'video_feed', self.video_feed)
+        self.app.add_url_rule('/click_coordinates', 'click_coordinates', self.click_coordinates, methods=['POST'])
         self.socketio.on_event('control_turret', self.handle_control_turret)
 
     def capture_frames(self):
@@ -32,9 +33,6 @@ class TurretServer:
 
     def gen_frames(self):
         while True:
-            #frame = self.turret.get_frame()
-            #if frame is not None and frame.size != 0:
-            #    self.latest_frame = frame
             if self.latest_frame is None:
                 print("Error: No frame available")
                 time.sleep(0.1)  # Add a delay to avoid requesting frames too quickly
@@ -55,11 +53,22 @@ class TurretServer:
     def video_feed(self):
         return Response(self.gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+    def click_coordinates(self):
+        data = request.get_json()
+        x = data['x']
+        y = data['y']
+        print(f"Received click coordinates: x={x}, y={y}")
+        # Process the coordinates as needed
+        # For example, you can move the turret based on the coordinates
+        print("Received click coordinates: x=%s, y=%s" % (x, y))
+        angles = self.turret._sensorHandler._camera.getAngleEstimation((x, y), fromCentre=False)
+        self.turret._adjustTrack(angles)
+        return jsonify(success=True)
+
     def handle_control_turret(self, data):
         # Implement turret control logic here
         print(f"Received control command: {data}")
         # Example: move turret based on received data
-        # self.turret.move(data['direction'])
         match data['direction']:
             case 'up':
                 self.turret._adjustTrack((0,10))
