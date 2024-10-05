@@ -75,8 +75,8 @@ class ServoHandler:
         self.trackPitch.adjust(angles[1], throttle=throttle)
     
     def slideCamera(self, angles):
-        self.trackYaw.adjust((0.2 * angles[0]) + (0.8 * self.trackYaw.currentAngle))
-        self.trackPitch.adjust((0.2 * angles[1]) + (0.8 * self.trackPitch.currentAngle))
+        self.trackYaw.adjust(angles)#0.2 * angles[0]) + (0.8 * self.trackYaw.currentAngle))
+        self.trackPitch.adjust(angles)#0.2 * angles[1]) + (0.8 * self.trackPitch.currentAngle))
         
     def setCamera(self, angles, throttle = 1, fromCentre = False):
         self.trackYaw.setAngle(angles[0], throttle = throttle, fromCentre=fromCentre)

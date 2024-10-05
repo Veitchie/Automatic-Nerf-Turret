@@ -122,6 +122,8 @@ class SensorHandler:
         #print("fused / %s:\t%s" % (len(ps),ps))
         return ps
 
+    def getFrame(self):
+        return self._camera.getFrame()
 
     def _update(self):
         if self.__lock:

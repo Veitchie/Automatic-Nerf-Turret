@@ -12,6 +12,7 @@ class _TurretMode(Enum):
     DebugPS = 3
     AdjustTrack = 4
     AdjustGun = 5
+    MANUAL = 6
 
 def unknownCommand() -> None:
     print("Unknown command, type [exit] to exit.")
@@ -48,6 +49,9 @@ class Turret:
         self._updateThread.start()
 
         print("--- Turret is ready! ---")
+
+    def get_frame(self):
+        return self._sensorHandler.getFrame()
     
     def stop(self):
         self._mode = _TurretMode.Shutdown
@@ -70,6 +74,8 @@ class Turret:
                     self._adjustTrack()
                 case _TurretMode.AdjustGun:
                     self._adjustGun()
+                case _TurretMode.MANUAL:
+                    pass
         self._servoHandler.disable()
         print("##### %s IS OFFLINE #####" % self._Name)
     
@@ -78,10 +84,11 @@ class Turret:
             self._servoHandler.moveTurret((self._aGun,0), throttle = 0.15, fromCentre=True)
             self._aGun = 0
 
-    def _adjustTrack(self):
-        if self._aTrack != 0:
-            self._servoHandler.adjustCamera(self._aTrack)
-            self._aTrack = 0
+    def _adjustTrack(self, adjust = (0, 0)):
+        if adjust == (0, 0):
+            return
+        self._servoHandler.adjustCamera(adjust, throttle = 0.1)
+        
 
     def _debugPS(self):
         self._sensorHandler.facesDetected()
