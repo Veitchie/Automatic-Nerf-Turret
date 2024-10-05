@@ -71,6 +71,7 @@ class SensorHandler:
         self._currentTargets = []
         self._currentDistance = 0
         self._lastPositive = (-1, False)
+        self.__lock = False
         
         print("Setup complete.")
     
@@ -123,6 +124,9 @@ class SensorHandler:
 
 
     def _update(self):
+        if self.__lock:
+            print("Cannot update")
+            return self._face
         psFaces = self._personSensor.getFaces()
         camFaces = self._camera.detectFaces(self._camera.getFrame())
         self._currentTargets = camFaces#self.faceFusion(ps=camFaces, camera=psFaces) # Swapped them around so if there's matching faces it uses the camera one
@@ -174,9 +178,11 @@ class SensorHandler:
                 -1"""
         if not self._continuousUpdate:
             self._update()
+        self.__lock = True
         face = self._face
         self._face = -1
         self._facesDetected =False
+        self.__lock = False
         return face
 
     def getLastPositive(self):

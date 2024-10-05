@@ -3,6 +3,7 @@ from ServoHandler import ServoHandler
 from threading import Thread
 from enum import Enum
 from timeit import default_timer as timer
+import time
 
 class _TurretMode(Enum):
     Shutdown = 0
@@ -34,7 +35,7 @@ class Turret:
         self._scanningPositionTime = timer()
         self._scanningDelay = 0.5
         self._scanningTimeout = 1
-        self._scanningSpeed = 0.25
+        self._scanningSpeed = 0.1
         self._scanningThreshold = 1
         self._scanningMode = 0 # ints used to signify mode : 0 -> Searching, 1 -> Confirming, 2 -> Targeting
 
@@ -42,7 +43,8 @@ class Turret:
         self._aGun = 0
 
         self._servoHandler.enable()
-        self._sensorHandler.start()
+        self._servoHandler.start()
+        #self._sensorHandler.start()
         self._updateThread.start()
 
         print("--- Turret is ready! ---")
@@ -95,7 +97,7 @@ class Turret:
         self._servoHandler.moveTurret(coords, fromCentre = True)
 
     def _scan(self):
-        # Move sensors until face is detected
+        self._sensorHandler._update()
         match self._scanningMode:
 
             # No targets, moving between two point while scanning
@@ -118,6 +120,7 @@ class Turret:
                         #print("Stopping motion. Face detected: %s" % (coords,))
                         print("Stopping to see face",face)
                         self._servoHandler.stopTrack()
+                        #time.sleep(2)#input("PAUSE")
                         self._scanningMode = 1
                         self._scanningPositionTime = timer()
 
@@ -125,13 +128,17 @@ class Turret:
             ########################################################
             case 1:
                 # Look for faces after a short delay to ensure sensors are stationary
-                if not self._servoHandler.inMotion()  and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                if self._servoHandler.inMotion():
+                    self._scanningPositionTime = timer()
+                if (timer() - self._scanningPositionTime) > self._scanningDelay:
+                #if not self._servoHandler.inMotion()  and (timer() - self._scanningPositionTime) > self._scanningDelay:
                     facesPresent = self._sensorHandler.facesDetected()
                     if facesPresent:
                         face = self._sensorHandler.getFace()
                         if face != -1:
                             coords = (face["yaw_offset"], face["pitch_offset"])
-                            #print("Face Detected! Moving to target: %s" % (coords,))
+                            print("Face Detected! Moving to target: %s" % (coords,))
+                            #time.sleep(2)#input("PAUSE")
                             print("Face confirmed, moving..",face)
                             self._servoHandler.adjustCamera(coords, throttle = self._scanningSpeed)
                             self._scanningMode = 2
@@ -146,7 +153,11 @@ class Turret:
             # Faces were detected and the sensors will move to the estimated location
             #########################################################################
             case 2:
-                if not self._servoHandler.inMotion() and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                #if not self._servoHandler.inMotion() and (timer() - self._scanningPositionTime) > self._scanningDelay:
+                if self._servoHandler.inMotion():
+                    self._scanningPositionTime = timer()
+                    print("In motion")
+                if (timer() - self._scanningPositionTime) > self._scanningDelay:
                     facesPresent = self._sensorHandler.facesDetected()
                     if facesPresent:
                         face = self._sensorHandler.getFace()
@@ -157,6 +168,7 @@ class Turret:
                             if coords[0] <= self._scanningThreshold and coords[1] <= self._scanningThreshold:
                                 dist = self._sensorHandler.getDistance()
                                 #print("Approx. Distance: %smm, confidence level: %s" % (dist, face["box_confidence"]))
+                                #time.sleep(2)#input("PAUSE")
                                 self._matchCamera(distance = dist)
                                 print("Aiming turret...",face)
                             else:

@@ -76,6 +76,12 @@ class Servo:
             return 0
         return (target - current) / abs(target - current)
     
+    def moveDirection(self, direction):
+        if direction == 0:
+            return
+        if direction > 0:
+            self.setAngle(self.maxAngle)
+        self.setAngle(self.minAngle, abs(direction))
     
     def setAngle(self, target, throttle = 1, fromCentre = False):
         """

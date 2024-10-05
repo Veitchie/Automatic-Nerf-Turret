@@ -42,7 +42,7 @@ class ServoHandler:
         self.timeAtLastUpdate = timerStartValue
         self.updateTime = 0.01
         self.updateThread = threading.Thread(target=self.update, args=(), daemon=True)
-        self.start()
+        #self.start()
 
     def restAllMotors(self):
         self.gunYaw.rest()
