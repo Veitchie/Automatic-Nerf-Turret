@@ -94,6 +94,7 @@ class SensorHandler:
         Returns:
             frame (numpy array): Unified frame with scaled data.
         """
+        distance = self._currentDistance
         ps_resolution = [1280,720]
         ps_fov = (self._personSensor.fov, self._personSensor.fov * (ps_resolution[1] / ps_resolution[0]))
         ps_fov_scale = self._personSensor.fovScale
@@ -107,24 +108,26 @@ class SensorHandler:
         personSensorFrame = np.ones((ps_resolution[1], ps_resolution[0], 4), dtype=np.uint8)
 
         frame = personSensorFrame
-        if camera_frame is not None:
-            # Centre the camera_frame ontop of the personSensorFrame
-            frame[ps_resolution[1]//2 - camera_frame.shape[0] // 2:ps_resolution[1]//2 + camera_frame.shape[0] // 2, ps_resolution[0]//2 - camera_frame.shape[1] // 2:ps_resolution[0]//2 + camera_frame.shape[1] // 2] = camera_frame
+        if camera_frame is None:
+            return None
+        # Centre the camera_frame ontop of the personSensorFrame
+        frame[ps_resolution[1]//2 - camera_frame.shape[0] // 2:ps_resolution[1]//2 + camera_frame.shape[0] // 2, ps_resolution[0]//2 - camera_frame.shape[1] // 2:ps_resolution[0]//2 + camera_frame.shape[1] // 2] = camera_frame
 
-        # for face in faces:
-        #     if face["device_id"] == "camera":
-        #         # Scale camera face data to fit the larger FOV
-        #         face["box_centre"] = (int(face["box_centre"][0] * scale_x), int(face["box_centre"][1] * scale_y))
-        #         face["box_size"] = (int(face["box_size"][0] * scale_x), int(face["box_size"][1] * scale_y))
-        #     else:
-        #         # Scale person sensor face data to fit the larger FOV
-        #         face["box_centre"] = (int(face["box_centre"][0] * scale_x), int(face["box_centre"][1] * scale_y))
-        #         face["box_size"] = (int(face["box_size"][0] * scale_x), int(face["box_size"][1] * scale_y))
+        for face in faces:
+            if face["device_id"] == "camera":
+                # Scale camera face data to fit the larger FOV
+                colour = (255, 0, 0)
+            else:
+                # Scale person sensor face data to fit the larger FOV
+                colour = (0, 255, 0)
 
-        #     # Draw the face data on the frame
-        #     top_left = (face["box_centre"][0] - face["box_size"][0] // 2, face["box_centre"][1] - face["box_size"][1] // 2)
-        #     bottom_right = (face["box_centre"][0] + face["box_size"][0] // 2, face["box_centre"][1] + face["box_size"][1] // 2)
-        #     cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
+            # Draw the face data on the frame
+            top_left = (face["box_centre"][0] - face["box_width"] // 2, face["box_centre"][1] - face["box_height"] // 2)
+            bottom_right = (face["box_centre"][0] + face["box_width"] // 2, face["box_centre"][1] + face["box_height"] // 2)
+            cv2.rectangle(frame, top_left, bottom_right, colour, 2)
+
+        # Add current distance redout to frame
+        cv2.putText(frame, "Distance: %s cm" % (distance), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         # Get the original dimensions
         original_height, original_width = frame.shape[:2]

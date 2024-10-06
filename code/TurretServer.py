@@ -45,7 +45,7 @@ class TurretServer:
 
     def capture_frames(self):
         while True:
-            if timer() - self.lastCaptureTime < 0.1:
+            if timer() - self.lastCaptureTime < 0.01:
                 continue
             self.lastCaptureTime = timer()
             frame = self.turret._sensorHandler.getDebugFrame()
