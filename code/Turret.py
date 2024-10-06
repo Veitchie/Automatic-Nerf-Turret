@@ -45,7 +45,7 @@ class Turret:
 
         self._servoHandler.enable()
         self._servoHandler.start()
-        #self._sensorHandler.start()
+        self._sensorHandler.start()
         self._updateThread.start()
 
         print("--- Turret is ready! ---")
@@ -100,7 +100,7 @@ class Turret:
 
     def _matchCamera(self, distance = 100000):
         coords = [self._servoHandler.trackYaw.getCurrentAngle(fromCentre = True), self._servoHandler.trackPitch.getCurrentAngle(fromCentre = True)]
-        #print("Moving gun to %s" % (coords,))
+        print("MOVING\t%s" % (coords,))
         self._servoHandler.moveTurret(coords, fromCentre = True)
 
     def _scan(self):

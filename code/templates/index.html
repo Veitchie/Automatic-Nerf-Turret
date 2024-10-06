@@ -1,18 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turret Control</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #video-stream {
+            border: 2px solid #343a40;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            width: 1000px; /* Set the desired width */
+            height: 1000px;
+        }
+        .control-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .d-pad button {
+            width: 100px;
+            height: 100px;
+        }
+    </style>
 </head>
 <body>
     <h1>Turret Control</h1>
-    <img id="video-stream" src="/video_feed" >
-    <br>
-    <button onclick="controlTurret('left')">Left</button>
-    <button onclick="controlTurret('right')">Right</button>
-    <button onclick="controlTurret('up')">Up</button>
-    <button onclick="controlTurret('down')">Down</button>
+    <img id="video-stream" src="/video_feed" class="img-fluid">
+    <div class="control-buttons">
+        <div class="d-pad">
+            <div></div>
+            <button class="btn btn-primary" onclick="controlTurret('up')">Up</button>
+            <div></div>
+            <button class="btn btn-primary" onclick="controlTurret('left')">Left</button>
+            <div></div>
+            <button class="btn btn-primary" onclick="controlTurret('right')">Right</button>
+            <div></div>
+            <button class="btn btn-primary" onclick="controlTurret('down')">Down</button>
+            <div></div>
+        </div>
+        <button class="btn btn-danger" onclick="controlTurret('aim-turret')">Aim</button>
+    </div>
 
     <script>
         var socket = io();

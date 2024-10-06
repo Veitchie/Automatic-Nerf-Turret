@@ -5,6 +5,8 @@ from TfLunaI2C import TfLunaI2C
 from threading import Thread
 from enum import Enum
 import time
+import numpy as np
+import cv2
 
 def returnGreaterValue(key, arrayOfDictionaries):
     length = len(arrayOfDictionaries)
@@ -60,6 +62,7 @@ class SensorHandler:
         print("Setting up PiCamera...")
         self._camera = Camera(resolution=(640,480))
         self._camera.start()
+        self.__cameraFrame = np.zeros((480,640,3), dtype=np.uint8)
 
         # Handler variables & stuff
         print("Setting up Sensor Handler attributes...")
@@ -83,6 +86,62 @@ class SensorHandler:
     def stop(self):
         """Exit running update thread."""
         self._continuousUpdate = False
+
+    def getDebugFrame(self):
+        """
+        Create a unified frame with the size of the larger FOV and scale the other data to fit.
+
+        Returns:
+            frame (numpy array): Unified frame with scaled data.
+        """
+        ps_resolution = [1280,720]
+        ps_fov = (self._personSensor.fov, self._personSensor.fov * (ps_resolution[1] / ps_resolution[0]))
+        ps_fov_scale = self._personSensor.fovScale
+        cam_resolution = (self._camera._width, self._camera._height)
+        cam_fov = (self._camera._fov, self._camera._fov * (cam_resolution[1] / cam_resolution[0]))
+        cam_fov_scale = self._camera._fovScale
+        faces = self._currentTargets
+        camera_frame = self.__cameraFrame
+        coef = ps_fov[0] / cam_fov[0]
+        ps_resolution = (int(cam_resolution[0] * coef), int(cam_resolution[1] * coef))
+        personSensorFrame = np.ones((ps_resolution[1], ps_resolution[0], 4), dtype=np.uint8)
+
+        frame = personSensorFrame
+        if camera_frame is not None:
+            # Centre the camera_frame ontop of the personSensorFrame
+            frame[ps_resolution[1]//2 - camera_frame.shape[0] // 2:ps_resolution[1]//2 + camera_frame.shape[0] // 2, ps_resolution[0]//2 - camera_frame.shape[1] // 2:ps_resolution[0]//2 + camera_frame.shape[1] // 2] = camera_frame
+
+        # for face in faces:
+        #     if face["device_id"] == "camera":
+        #         # Scale camera face data to fit the larger FOV
+        #         face["box_centre"] = (int(face["box_centre"][0] * scale_x), int(face["box_centre"][1] * scale_y))
+        #         face["box_size"] = (int(face["box_size"][0] * scale_x), int(face["box_size"][1] * scale_y))
+        #     else:
+        #         # Scale person sensor face data to fit the larger FOV
+        #         face["box_centre"] = (int(face["box_centre"][0] * scale_x), int(face["box_centre"][1] * scale_y))
+        #         face["box_size"] = (int(face["box_size"][0] * scale_x), int(face["box_size"][1] * scale_y))
+
+        #     # Draw the face data on the frame
+        #     top_left = (face["box_centre"][0] - face["box_size"][0] // 2, face["box_centre"][1] - face["box_size"][1] // 2)
+        #     bottom_right = (face["box_centre"][0] + face["box_size"][0] // 2, face["box_centre"][1] + face["box_size"][1] // 2)
+        #     cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
+
+        # Get the original dimensions
+        original_height, original_width = frame.shape[:2]
+
+        # Calculate the aspect ratio
+        aspect_ratio = original_height / original_width
+
+        # Calculate the new dimensions
+        new_width = 1000
+        new_height = int(new_width * aspect_ratio)
+
+        # Resize the frame
+        resized_frame = cv2.resize(frame, (new_width, new_height))
+        frame = resized_frame
+
+        return frame
+
 
     def setFaceCentreOffset(self, newCoords):
         """Set new face offset values.
@@ -129,8 +188,9 @@ class SensorHandler:
         if self.__lock:
             print("Cannot update")
             return self._face
+        self.__cameraFrame = self._camera.getFrame()
         psFaces = self._personSensor.getFaces()
-        camFaces = self._camera.detectFaces(self._camera.getFrame())
+        camFaces = self._camera.detectFaces(self.__cameraFrame)
         self._currentTargets = camFaces#self.faceFusion(ps=camFaces, camera=psFaces) # Swapped them around so if there's matching faces it uses the camera one
         #print("Current Targets: %s", self._currentTargets)
         
