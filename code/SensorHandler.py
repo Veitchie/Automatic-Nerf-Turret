@@ -75,6 +75,7 @@ class SensorHandler:
         self._currentDistance = 0
         self._lastPositive = (-1, False)
         self.__lock = False
+        self._lastDebugFrame = None
         
         print("Setup complete.")
     
@@ -86,6 +87,20 @@ class SensorHandler:
     def stop(self):
         """Exit running update thread."""
         self._continuousUpdate = False
+
+    def getAngleEstimation(self, coords):
+        """
+        Get the angle estimation from the last generated debug frame.
+        Parameters:
+            coords (tuple / array of ints) : Coordinates of the face.
+        Returns:
+            Angle estimation (tuple) : Angle estimation in degrees from centre.
+        """
+
+        # Need to consider the fact that if the debug frame is resized on the webpage the coordinates need to be scaled
+        if (coords[0] - self._personSensor.resolution[0] // 2 < self._camera._width) and (coords[1] - self._personSensor.resolution[1] // 2 < self._camera._height):
+            return self._camera.getAngleEstimation(coords - (self._personSensor.resolution[0] // 2, self._personSensor.resolution[1]  // 2))
+        return self._personSensor.getAngleEstimation(coords)
 
     def getDebugFrame(self):
         """
@@ -124,6 +139,9 @@ class SensorHandler:
             # Draw the face data on the frame
             top_left = (face["box_centre"][0] - face["box_width"] // 2, face["box_centre"][1] - face["box_height"] // 2)
             bottom_right = (face["box_centre"][0] + face["box_width"] // 2, face["box_centre"][1] + face["box_height"] // 2)
+
+            top_left = (top_left[0] + (ps_resolution[0] // 2), top_left[1] + (ps_resolution[1] // 2))
+            bottom_right = (bottom_right[0] + (ps_resolution[0] // 2), bottom_right[1] + (ps_resolution[1] // 2))
             cv2.rectangle(frame, top_left, bottom_right, colour, 2)
 
         # Add current distance redout to frame
@@ -142,6 +160,8 @@ class SensorHandler:
         # Resize the frame
         resized_frame = cv2.resize(frame, (new_width, new_height))
         frame = resized_frame
+
+        self._lastDebugFrame = frame
 
         return frame
 

@@ -41,8 +41,8 @@ class PersonSensor:
         # Custom variables
         self.continuousEnabled = False
         self.fov = 110
-        resolution = [1280,720]
-        self.fovScale = (self.fov / 255, (self.fov * (resolution[1] / resolution[0])) / 255)
+        self.resolution = [1280,720]
+        self.fovScale = (self.fov / 255, (self.fov * (self.resolution[1] / self.resolution[0])) / 255)
         self.faces = -1
         self.previousValue = [0,0]
         

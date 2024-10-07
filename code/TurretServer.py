@@ -49,13 +49,14 @@ class TurretServer:
                 continue
             self.lastCaptureTime = timer()
             frame = self.turret._sensorHandler.getDebugFrame()
+            #frame = self.turret.get_frame()
             if frame is not None and frame.size != 0:
                 self.latest_frame = frame
             #time.sleep(0.01)  # Small delay to prevent excessive CPU usage
 
     def gen_frames(self):
         while True:
-            if False:#timer() - self.lastGenTime < 0.1:
+            if timer() - self.lastGenTime < 0.1:
                 continue
             self.lastGenTime = timer()
             if self.latest_frame is None:
@@ -85,7 +86,7 @@ class TurretServer:
         print(f"Received click coordinates: x={x}, y={y}")
         # Process the coordinates as needed
         # For example, you can move the turret based on the coordinates
-        angles = self.turret._sensorHandler._camera.getAngleEstimation((x, y), fromCentre=False)
+        angles = self.turret._sensorHandler.getAngleEstimation((x, y))
         self.turret._adjustTrack(angles)
         return jsonify(success=True)
 
