@@ -98,8 +98,13 @@ class SensorHandler:
         """
 
         # Need to consider the fact that if the debug frame is resized on the webpage the coordinates need to be scaled
-        if (coords[0] - self._personSensor.resolution[0] // 2 < self._camera._width) and (coords[1] - self._personSensor.resolution[1] // 2 < self._camera._height):
-            return self._camera.getAngleEstimation(coords - (self._personSensor.resolution[0] // 2, self._personSensor.resolution[1]  // 2))
+        oldCoords = coords
+        coef = self._personSensor.resolution[0] / 1000
+        coords = (coords[0] * coef, coords[1] * coef)
+        #coords = (coords[0] - self._personSensor.resolution[0] // 2, coords[1] - self._personSensor.resolution[1] // 2)
+        if (abs(coords[0]) < self._camera._width // 2) and (abs(coords[1]) < self._camera._height // 2):
+            return self._camera.getAngleEstimation(coords)
+        
         return self._personSensor.getAngleEstimation(coords)
 
     def getDebugFrame(self):

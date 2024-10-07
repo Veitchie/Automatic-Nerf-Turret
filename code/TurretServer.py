@@ -87,7 +87,7 @@ class TurretServer:
         # Process the coordinates as needed
         # For example, you can move the turret based on the coordinates
         angles = self.turret._sensorHandler.getAngleEstimation((x, y))
-        self.turret._adjustTrack(angles)
+        #self.turret._adjustTrack(angles)
         return jsonify(success=True)
 
     def handle_control_turret(self, data):

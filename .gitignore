@@ -5,4 +5,4 @@
 *.xml
 /*.png
 /*.jpg
-/.vscode/
+/.vscode/*
