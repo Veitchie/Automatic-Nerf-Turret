@@ -84,8 +84,6 @@ class TurretServer:
         x = data['x']
         y = data['y']
         print(f"Received click coordinates: x={x}, y={y}")
-        # Process the coordinates as needed
-        # For example, you can move the turret based on the coordinates
         angles = self.turret._sensorHandler.getAngleEstimation((x, y))
         #self.turret._adjustTrack(angles)
         return jsonify(success=True)

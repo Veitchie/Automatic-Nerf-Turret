@@ -6,9 +6,11 @@ import fcntl
 import struct
 import time
 from threading import Thread
+from Sensor import Sensor
+from Face import Face
 
 
-class PersonSensor:
+class PersonSensor(Sensor):
     
     def __init__(self):
 
@@ -39,12 +41,13 @@ class PersonSensor:
         fcntl.ioctl(self.i2c_handle, I2C_PERIPHERAL, PERSON_SENSOR_I2C_ADDRESS)
         
         # Custom variables
+        super().__init__(resolution = (255,255), fov = (110, 110 * (720/1280)))
         self.continuousEnabled = False
-        self.fov = 110
-        self.resolution = [1280,720]
-        self.fovScale = (self.fov / 255, (self.fov * (self.resolution[1] / self.resolution[0])) / 255)
         self.faces = -1
         self.previousValue = [0,0]
+    
+    def readData(self):
+        return self.getFaces()
         
     def start(self):
         self.continuousEnabled = True
@@ -100,35 +103,31 @@ class PersonSensor:
             w = box_right - box_left
             h = box_bottom - box_top
             # Centre coordinates of the face boundary box
-            x = box_left + w
-            y = box_top + h
+            x = box_left + w//2
+            y = box_top + h//2
 
             # FOV information
-            coords = (x,y)
+            coords = [x - (255//2), y - (255//2)]
             angle_offset = self.getAngleEstimation(coords)
-            angA = self.getAngleEstimation((coords[0] - (w//2), coords[1] - (h//2)))
-            angB = self.getAngleEstimation((coords[0] + (w//2), coords[1] + (h//2)))
+            angA = self.getAngleEstimation((box_left- (255//2), box_top- (255//2)))
+            angB = self.getAngleEstimation((255 - box_right, 255 - box_bottom))
             angle_range = (abs(angA[0] - angB[0]), abs(angA[1] - angB[1]))
         
-            face = {
-                "box_confidence": box_confidence,
-                "box_left": box_left,
-                "box_top": box_top,
-                "box_right": box_right,
-                "box_bottom": box_bottom,
-                "box_width": w,
-                "box_height": h,
-                "box_area" : w * h,
-                "box_centre": [x, y],
-                "id_confidence": id_confidence,
-                "id": id,
-                "is_facing": is_facing,
-                "device_id" : "person_sensor",
-                "yaw_offset" : angle_offset[0],
-                "pitch_offset" : angle_offset[1] * -1,
-                "fov_range" : angle_range
-            }
-            faces.append(face)
+            face = Face(
+                box_confidence=box_confidence,
+                box_left=box_left,
+                box_top=box_top,
+                box_right=box_right,
+                box_bottom=box_bottom,
+                id_confidence=id_confidence,
+                id=id,
+                is_facing=is_facing,
+                device_id="person_sensor",
+                yaw_offset=angle_offset[0],
+                pitch_offset=angle_offset[1] * -1,
+                fov_range=angle_range
+            )
+            faces.append(face.to_dict())
         
         # Return faces or -1 if none
         if (num_faces > 0):
@@ -239,29 +238,28 @@ class PersonSensor:
             return face
         return -1
     
-    def getAngleEstimation(self, coordinates, fromCentre = True):
-        """
-        Returns the equivalent Yaw and Pitch angles from the Person Sensor for the given frame coordinates.
+    # def getAngleEstimation(self, coordinates, fromCentre = True):
+    #     """
+    #     Returns the equivalent Yaw and Pitch angles from the Person Sensor for the given frame coordinates.
         
-        Parameters:
-            coordinates - Coordinates to convert (array or tuple)
-        Returns:
-            Yaw & Pitch (tuple)
-        """
-        # Estimated x/y angle offset of face centre
-        if (coordinates == -1):
-            return -1
-        x = int (coordinates[0] * self.fovScale[0])
-        y = int (coordinates[1] * self.fovScale[1])
-        if fromCentre:
-            return (x - self.fov/2, y - self.fov/2)
-        return (x,y)
+    #     Parameters:
+    #         coordinates - Coordinates to convert (array or tuple)
+    #     Returns:
+    #         Yaw & Pitch (tuple)
+    #     """
+    #     # Estimated x/y angle offset of face centre
+    #     if (coordinates == -1):
+    #         return -1
+    #     x = int (coordinates[0] * self.fovScale[0])
+    #     y = int (coordinates[1] * self.fovScale[1])
+    #     if fromCentre:
+    #         return (x - self.fov/2, y - self.fov/2)
+    #     return (x,y)
 
 def main():
     ps = PersonSensor()
 
-    x = ""
-    while not x == "c":
+    while True:
         face = ps.getMostConfidentFace()
         if (face != -1):
             print(face)

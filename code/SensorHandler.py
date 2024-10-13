@@ -88,24 +88,32 @@ class SensorHandler:
         """Exit running update thread."""
         self._continuousUpdate = False
 
-    def getAngleEstimation(self, coords):
+    def getAngleEstimation(self, rawCoordinates):
         """
         Get the angle estimation from the last generated debug frame.
         Parameters:
-            coords (tuple / array of ints) : Coordinates of the face.
+            coords (tuple / array of ints) : Coordinate offsets from centre of the face.
         Returns:
             Angle estimation (tuple) : Angle estimation in degrees from centre.
         """
 
-        # Need to consider the fact that if the debug frame is resized on the webpage the coordinates need to be scaled
-        oldCoords = coords
-        coef = self._personSensor.resolution[0] / 1000
-        coords = (coords[0] * coef, coords[1] * coef)
-        #coords = (coords[0] - self._personSensor.resolution[0] // 2, coords[1] - self._personSensor.resolution[1] // 2)
-        if (abs(coords[0]) < self._camera._width // 2) and (abs(coords[1]) < self._camera._height // 2):
-            return self._camera.getAngleEstimation(coords)
-        
-        return self._personSensor.getAngleEstimation(coords)
+        rawCoordinates = (rawCoordinates[0], rawCoordinates[1] * -1)
+        cameraFrameShape = self._camera.getResolution()
+        coef = self._personSensor.getFOV / self._camera.getFOV()
+        personSensorFrameShape = (int(cameraFrameShape[0] * coef), int(cameraFrameShape[1] * coef))
+        frameShape = (self._lastDebugFrame.shape[:2][1], self._lastDebugFrame.shape[:2][0])
+
+        coordScaler = personSensorFrameShape[0] / frameShape[0]
+        coordinates = (rawCoordinates[0] * coordScaler, rawCoordinates[1] * coordScaler)
+
+        cameraRange = (cameraFrameShape[0] // 2, cameraFrameShape[1] // 2)
+
+        if abs(coordinates[0]) <= cameraRange[0] and abs(coordinates[1]) <= cameraRange[1]:
+            return self._camera.getAngleEstimation(coordinates)
+
+        # Person Sensor operates on values 0-255 so we need to scale the values to fit
+        personSensorCoordinates = ((coordinates[0] / personSensorFrameShape[0]) * 255, (coordinates[1] / personSensorFrameShape[1]) * 255)
+        return self._personSensor.getAngleEstimation(personSensorCoordinates)
 
     def getDebugFrame(self):
         """
@@ -114,15 +122,16 @@ class SensorHandler:
         Returns:
             frame (numpy array): Unified frame with scaled data.
         """
+
+        # Gather all of out lovely data
         distance = self._currentDistance
-        ps_resolution = [1280,720]
-        ps_fov = (self._personSensor.fov, self._personSensor.fov * (ps_resolution[1] / ps_resolution[0]))
-        ps_fov_scale = self._personSensor.fovScale
-        cam_resolution = (self._camera._width, self._camera._height)
-        cam_fov = (self._camera._fov, self._camera._fov * (cam_resolution[1] / cam_resolution[0]))
-        cam_fov_scale = self._camera._fovScale
+        ps_fov = self._personSensor.getFOV()#fov, self._personSensor.fov * (self._personSensor.resolution[1] / self._personSensor.resolution[0]))
+        cam_resolution = self._camera.getResolution()
+        cam_fov = self._camera.getFOV()
         faces = self._currentTargets
         camera_frame = self.__cameraFrame
+
+        # Set the size of the person sensor frame based on the person sensor FOV vs the camera FOV
         coef = ps_fov[0] / cam_fov[0]
         ps_resolution = (int(cam_resolution[0] * coef), int(cam_resolution[1] * coef))
         personSensorFrame = np.ones((ps_resolution[1], ps_resolution[0], 4), dtype=np.uint8)
@@ -154,8 +163,6 @@ class SensorHandler:
 
         # Get the original dimensions
         original_height, original_width = frame.shape[:2]
-
-        # Calculate the aspect ratio
         aspect_ratio = original_height / original_width
 
         # Calculate the new dimensions
